@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { useWallet } from "@/providers/WalletContext";
 import WalletInfo from "@/components/Header/WalletInfo";
+import ConnectModal from "@/components/ConnectModal";
 
 export default function Header({
   onEndSession,
 }: {
   onEndSession?: () => void;
 }) {
-  const { eoaAddress, connect, disconnect } = useWallet();
+  const { eoaAddress, disconnect } = useWallet();
+  const [showModal, setShowModal] = useState(false);
 
   const handleDisconnect = async () => {
     try {
@@ -20,17 +23,26 @@ export default function Header({
   };
 
   return (
-    <div className="flex flex-col items-center relative">
-      {eoaAddress ? (
-        <WalletInfo onDisconnect={handleDisconnect} />
-      ) : (
-        <button
-          className="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3 hover:bg-white/20 cursor-pointer transition-colors font-semibold select-none"
-          onClick={connect}
-        >
-          Connect Wallet
-        </button>
-      )}
+    <div className="flex items-center justify-between w-full">
+      <div className="text-lg font-semibold text-white">PolyLeague</div>
+
+      <div>
+        {eoaAddress ? (
+          <WalletInfo onDisconnect={handleDisconnect} />
+        ) : (
+          <button
+            className="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3 hover:bg-white/20 cursor-pointer transition-colors font-semibold select-none"
+            onClick={() => setShowModal(true)}
+          >
+            Connect Wallet
+          </button>
+        )}
+      </div>
+
+      <ConnectModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+      />
     </div>
   );
 }

@@ -1,16 +1,19 @@
 "use client";
 
 import { ReactNode } from "react";
+import WagmiProvider from "./WagmiProvider";
 import QueryProvider from "./QueryProvider";
 import { WalletProvider } from "./WalletProvider";
 import TradingProvider from "./TradingProvider";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <WalletProvider>
+    <WagmiProvider>
       <QueryProvider>
-        <TradingProvider>{children}</TradingProvider>
+        <WalletProvider>
+          <TradingProvider>{children}</TradingProvider>
+        </WalletProvider>
       </QueryProvider>
-    </WalletProvider>
+    </WagmiProvider>
   );
 }

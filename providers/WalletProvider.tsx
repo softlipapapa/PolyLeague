@@ -8,10 +8,12 @@ import {
   http,
   WalletClient,
 } from "viem";
+import { useAccount, useDisconnect } from "wagmi";
+import { useAppKit } from "@reown/appkit/react";
 import getMagic from "@/lib/magic";
 import { providers } from "ethers";
 import { polygon } from "viem/chains";
-import { WalletContext, WalletContextType } from "./WalletContext";
+import { WalletContext, WalletContextType, WalletType } from "./WalletContext";
 import { POLYGON_RPC_URL } from "@/constants/polymarket";
 
 const publicClient = createPublicClient({
@@ -26,57 +28,126 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [eoaAddress, setEoaAddress] = useState<`0x${string}` | undefined>(
     undefined
   );
+  const [walletType, setWalletType] = useState<WalletType>(null);
 
-  useEffect(() => {
+  // Wagmi hooks for WalletConnect
+  const {
+    address: wagmiAddress,
+    isConnected: wagmiConnected,
+    connector: activeConnector,
+  } = useAccount();
+  const { disconnectAsync: wagmiDisconnect } = useDisconnect();
+  const { open: openAppKit } = useAppKit();
+
+  // ── Helper functions (declared before useEffect) ──
+  const setupMagicClients = useCallback(() => {
     const magic = getMagic();
     if (!magic) return;
 
+    const rpc = magic.rpcProvider as unknown;
     const client = createWalletClient({
       chain: polygon,
-      transport: custom(magic.rpcProvider as any),
+      transport: custom(rpc as Parameters<typeof custom>[0]),
     });
-
-    const ethersProvider = new providers.Web3Provider(magic.rpcProvider as any);
+    const ethersProvider = new providers.Web3Provider(
+      rpc as providers.ExternalProvider
+    );
 
     setWalletClient(client);
     setEthersSigner(ethersProvider.getSigner());
-
-    magic.user.isLoggedIn().then((isLoggedIn) => {
-      if (isLoggedIn) {
-        fetchUser();
-      }
-    });
   }, []);
 
-  const fetchUser = useCallback(async () => {
+  const fetchMagicUser = useCallback(async () => {
     const magic = getMagic();
     if (!magic) return;
     const userInfo = await magic.user.getInfo();
-    const address = (userInfo as any).wallets?.ethereum?.publicAddress;
+    const address = (
+      userInfo as { wallets?: { ethereum?: { publicAddress?: string } } }
+    ).wallets?.ethereum?.publicAddress;
     setEoaAddress(address ? (address as `0x${string}`) : undefined);
   }, []);
 
-  const connect = useCallback(async () => {
+  // ── Magic Link: check existing session on mount ──
+  useEffect(() => {
+    if (walletType && walletType !== "magic") return;
+
+    const magic = getMagic();
+    if (!magic) return;
+
+    magic.user.isLoggedIn().then((isLoggedIn) => {
+      if (isLoggedIn) {
+        setWalletType("magic");
+        setupMagicClients();
+        fetchMagicUser();
+      }
+    });
+  }, [walletType, setupMagicClients, fetchMagicUser]);
+
+  // ── WalletConnect: sync wagmi state when connected ──
+  useEffect(() => {
+    if (walletType !== "walletconnect") return;
+    if (!wagmiConnected || !wagmiAddress || !activeConnector) return;
+
+    // Use the connector's provider callback to update all wallet state
+    activeConnector.getProvider().then((provider: unknown) => {
+      if (!provider) return;
+
+      setEoaAddress(wagmiAddress);
+
+      const client = createWalletClient({
+        chain: polygon,
+        transport: custom(provider as Parameters<typeof custom>[0]),
+      });
+      const ethersProvider = new providers.Web3Provider(
+        provider as providers.ExternalProvider
+      );
+
+      setWalletClient(client);
+      setEthersSigner(ethersProvider.getSigner());
+    });
+  }, [wagmiConnected, wagmiAddress, activeConnector, walletType]);
+
+  // ── Connect methods ──
+  const connectMagic = useCallback(async () => {
     const magic = getMagic();
     if (!magic) return;
     try {
       await magic.wallet.connectWithUI();
-      await fetchUser();
+      setWalletType("magic");
+      setupMagicClients();
+      await fetchMagicUser();
     } catch (error) {
-      console.error("Connect error:", error);
+      console.error("Magic connect error:", error);
     }
-  }, [fetchUser]);
+  }, [setupMagicClients, fetchMagicUser]);
 
-  const disconnect = useCallback(async () => {
-    const magic = getMagic();
-    if (!magic) return;
+  const connectWalletConnect = useCallback(async () => {
     try {
-      await magic.user.logout();
+      setWalletType("walletconnect");
+      await openAppKit();
+    } catch (error) {
+      console.error("WalletConnect error:", error);
+    }
+  }, [openAppKit]);
+
+  // ── Disconnect ──
+  const disconnect = useCallback(async () => {
+    try {
+      if (walletType === "magic") {
+        const magic = getMagic();
+        if (magic) await magic.user.logout();
+      } else if (walletType === "walletconnect") {
+        await wagmiDisconnect();
+      }
+
       setEoaAddress(undefined);
+      setWalletClient(null);
+      setEthersSigner(null);
+      setWalletType(null);
     } catch (error) {
       console.error("Disconnect error:", error);
     }
-  }, []);
+  }, [walletType, wagmiDisconnect]);
 
   const value = useMemo<WalletContextType>(
     () => ({
@@ -85,11 +156,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       walletClient,
       ethersSigner,
       publicClient,
-      connect,
+      connectMagic,
+      connectWalletConnect,
       disconnect,
       isConnected: !!eoaAddress,
+      walletType,
     }),
-    [eoaAddress, walletClient, ethersSigner, connect, disconnect]
+    [
+      eoaAddress,
+      walletClient,
+      ethersSigner,
+      connectMagic,
+      connectWalletConnect,
+      disconnect,
+      walletType,
+    ]
   );
 
   return (
