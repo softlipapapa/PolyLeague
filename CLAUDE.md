@@ -278,7 +278,34 @@ Write all code comments, git commit messages, and console logs in English.
 - `CODEBASE_SUMMARY.md` — new file, codebase overview
 
 **Next steps:**
-- Update `WalletProvider` to support both Magic Link + WalletConnect
-- Create `WagmiProvider` config
-- Build login screen with two connection options
-- WalletConnect Project ID: `9cfcc3777d3dab94048208e101cb199e`
+- ~~Update `WalletProvider` to support both Magic Link + WalletConnect~~ ✅
+- ~~Create `WagmiProvider` config~~ ✅
+- ~~Build login screen with two connection options~~ ✅
+
+### 2026-04-08 — WalletConnect Integration & Dual Login Modal
+
+**Done:**
+- Added WalletConnect support alongside existing Magic Link login
+- Created Wagmi config with Reown AppKit for WalletConnect QR modal
+- Updated `WalletProvider` to handle both connection types, creating ethers signer from either provider so trading flow works unchanged
+- Added `walletType` field to `WalletContext` (`"magic" | "walletconnect" | null`)
+- Split single `connect` method into `connectMagic` / `connectWalletConnect`
+- Built `ConnectModal` — popup with two options: Email (Magic Link) and WalletConnect
+- Restructured Header — "PolyLeague" title on left, connect button top-right, opens modal on click
+- Wrapped provider tree: `WagmiProvider > QueryProvider > WalletProvider > TradingProvider`
+
+**New files:**
+- `lib/wagmi.ts` — Wagmi + WalletConnect config using Reown AppKit adapter
+- `providers/WagmiProvider.tsx` — Wagmi provider wrapper + AppKit initialization
+- `components/ConnectModal.tsx` — Login modal with Magic Link & WalletConnect options
+
+**Updated files:**
+- `providers/WalletContext.tsx` — added `WalletType`, split connect methods
+- `providers/WalletProvider.tsx` — dual wallet support, wagmi state sync
+- `providers/index.tsx` — added WagmiProvider to provider tree
+- `components/Header/index.tsx` — top-right layout with modal trigger
+
+**Next steps:**
+- Phase 1.1: LoL market browsing page (Gamma API integration)
+- Phase 1.2: Betting functionality via Builder Relayer
+- Phase 1.3: Dark esports-themed UI
