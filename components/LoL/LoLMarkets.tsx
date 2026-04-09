@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTrading } from "@/providers/TradingProvider";
 import useLoLMarkets from "@/hooks/useLoLMarkets";
+import useTeamLogos from "@/hooks/useTeamLogos";
 
 import ErrorState from "@/components/shared/ErrorState";
 import EmptyState from "@/components/shared/EmptyState";
@@ -30,6 +31,14 @@ export default function LoLMarkets() {
 
   const events = data?.events || [];
   const leagues = data?.leagues || [];
+
+  // Collect all team names for logo lookup
+  const teamNames = useMemo(
+    () =>
+      events.flatMap((e) => [e.teamA, e.teamB].filter(Boolean) as string[]),
+    [events]
+  );
+  const { data: teamLogos } = useTeamLogos(teamNames);
 
   const handleOutcomeClick = (
     marketTitle: string,
@@ -95,6 +104,7 @@ export default function LoLMarkets() {
                 key={event.id}
                 event={event}
                 disabled={isGeoblocked}
+                teamLogos={teamLogos || {}}
                 onOutcomeClick={handleOutcomeClick}
               />
             ))}

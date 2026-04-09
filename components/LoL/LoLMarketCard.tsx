@@ -1,13 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import type { LoLEvent } from "@/hooks/useLoLMarkets";
 import Card from "@/components/shared/Card";
-import Badge from "@/components/shared/Badge";
 import { formatVolume } from "@/utils/formatting";
 
 interface LoLMarketCardProps {
   event: LoLEvent;
   disabled?: boolean;
+  teamLogos: Record<string, string | null>;
   onOutcomeClick: (
     marketTitle: string,
     outcome: string,
@@ -15,6 +16,41 @@ interface LoLMarketCardProps {
     tokenId: string,
     negRisk: boolean
   ) => void;
+}
+
+function TeamLogo({
+  teamName,
+  logoUrl,
+}: {
+  teamName: string;
+  logoUrl: string | null;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  if (logoUrl && !imgError) {
+    return (
+      <img
+        src={logoUrl}
+        alt={teamName}
+        className="w-10 h-10 object-contain"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  // Initials fallback
+  const initials = teamName
+    .split(/[\s.]+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+
+  return (
+    <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+      <span className="text-xs font-bold text-purple-300">{initials}</span>
+    </div>
+  );
 }
 
 function getMatchStatus(event: LoLEvent): {
@@ -67,6 +103,7 @@ const statusStyles = {
 export default function LoLMarketCard({
   event,
   disabled = false,
+  teamLogos,
   onOutcomeClick,
 }: LoLMarketCardProps) {
   const { mainMarket, teamA, teamB, bestOf, league } = event;
@@ -122,12 +159,16 @@ export default function LoLMarketCard({
                 );
               }}
               disabled={disabled || !mainMarket.acceptingOrders}
-              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all ${
+              className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all ${
                 disabled || !mainMarket.acceptingOrders
                   ? "opacity-50 cursor-not-allowed bg-white/5"
                   : "bg-white/5 hover:bg-green-500/10 hover:border-green-500/30 border border-transparent cursor-pointer"
               }`}
             >
+              <TeamLogo
+                teamName={teamA}
+                logoUrl={teamLogos[teamA] ?? null}
+              />
               <span className="font-semibold text-sm text-white truncate max-w-full">
                 {teamA}
               </span>
@@ -152,12 +193,16 @@ export default function LoLMarketCard({
                 );
               }}
               disabled={disabled || !mainMarket.acceptingOrders}
-              className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all ${
+              className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all ${
                 disabled || !mainMarket.acceptingOrders
                   ? "opacity-50 cursor-not-allowed bg-white/5"
                   : "bg-white/5 hover:bg-red-500/10 hover:border-red-500/30 border border-transparent cursor-pointer"
               }`}
             >
+              <TeamLogo
+                teamName={teamB}
+                logoUrl={teamLogos[teamB] ?? null}
+              />
               <span className="font-semibold text-sm text-white truncate max-w-full">
                 {teamB}
               </span>
