@@ -6,10 +6,11 @@ import Card from "@/components/shared/Card";
 import ActiveOrders from "@/components/Trading/Orders";
 import UserPositions from "@/components/Trading/Positions";
 import HighVolumeMarkets from "@/components/Trading/Markets";
+import LoLMarkets from "@/components/LoL/LoLMarkets";
 
 import { cn } from "@/utils/classNames";
 
-type TabId = "positions" | "orders" | "markets";
+type TabId = "lol" | "positions" | "orders" | "markets";
 
 interface Tab {
   id: TabId;
@@ -17,13 +18,14 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
+  { id: "lol", label: "LoL Esports" },
+  { id: "markets", label: "All Markets" },
   { id: "positions", label: "My Positions" },
   { id: "orders", label: "Open Orders" },
-  { id: "markets", label: "Markets" },
 ];
 
 export default function MarketTabs() {
-  const [activeTab, setActiveTab] = useState<TabId>("markets");
+  const [activeTab, setActiveTab] = useState<TabId>("lol");
 
   return (
     <Card className="p-6">
@@ -47,6 +49,7 @@ export default function MarketTabs() {
 
       {/* Tab Content */}
       <div>
+        {activeTab === "lol" && <LoLMarkets />}
         {activeTab === "positions" && <UserPositions />}
         {activeTab === "orders" && <ActiveOrders />}
         {activeTab === "markets" && <HighVolumeMarkets />}

@@ -259,6 +259,16 @@ Write all code comments, git commit messages, and console logs in English.
 - **对话超过 20 轮就用 `/compact` 或者直接开新对话**
 - **所有持久信息写在这个 CLAUDE.md 里**，不要依赖对话记忆
 - **每个步骤都要实际测试通过再继续**
+- **每完成一个小步骤就 commit + 更新 CLAUDE.md，不要攒到最后。防止 session limit 到了丢失进度**
+
+### Token 节省规则（重要）
+```
+1. 改代码时优先用 edit/patch 方式，只输出改动的部分，不要重新打印整个文件
+2. 不要主动展示完整文件内容，除非我明确要求 "show me the file"
+3. 解释尽量简洁，用 2-3 句话说清楚，不需要长篇大论
+4. 多个小改动合并成一次操作，不要一行一行改
+5. 代码改完直接跑测试验证，不要先展示代码再问我要不要测试
+```
 
 ## 开发日志
 
@@ -306,6 +316,31 @@ Write all code comments, git commit messages, and console logs in English.
 - `components/Header/index.tsx` — top-right layout with modal trigger
 
 **Next steps:**
-- Phase 1.1: LoL market browsing page (Gamma API integration)
+- ~~Phase 1.1: LoL market browsing page (Gamma API integration)~~ ✅
+
+### 2026-04-09 — Phase 1.1: LoL Market Browsing
+
+**Done:**
+- Built LoL market browsing with Gamma API integration (tag_id=65 = "league of legends")
+- API route parses event titles to extract team names, league, best-of format
+- Identifies main match-winner market vs prop markets (baron, dragon, handicap, etc.)
+- League filter UI (LPL, LFL, LCK, etc.)
+- Esports-styled match cards: Team A vs Team B with odds, live/upcoming/resolved status
+- LoL Esports is now the default tab on home page
+- Markets visible without login (browsing is read-only)
+
+**New files:**
+- `app/api/lol-markets/route.ts` — LoL markets API route
+- `hooks/useLoLMarkets.ts` — React Query hook with league filtering
+- `components/LoL/LeagueFilter.tsx` — League filter buttons
+- `components/LoL/LoLMarketCard.tsx` — Match card component
+- `components/LoL/LoLMarkets.tsx` — Main LoL markets view
+
+**Updated files:**
+- `components/Trading/MarketTabs.tsx` — added LoL Esports tab as default
+- `app/page.tsx` — markets visible without login
+
+**Next steps:**
+- Add team logo images to LoL market cards
 - Phase 1.2: Betting functionality via Builder Relayer
 - Phase 1.3: Dark esports-themed UI

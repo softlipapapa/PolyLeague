@@ -15,7 +15,6 @@ export default function Home() {
     isTradingSessionComplete,
     initializeTradingSession,
     endTradingSession,
-    eoaAddress,
     isGeoblocked,
     isGeoblockLoading,
     geoblockStatus,
@@ -44,10 +43,8 @@ export default function Home() {
         />
       )}
 
-      {/* Markets are viewable even when geoblocked, but trading buttons should be disabled */}
-      {(isTradingSessionComplete || isGeoblocked) && eoaAddress && (
-        <MarketTabs />
-      )}
+      {/* Markets are always viewable; trading buttons disabled when not connected */}
+      <MarketTabs />
     </div>
   );
 }
