@@ -1,65 +1,71 @@
 "use client";
 
 import { useWallet } from "@/providers/WalletContext";
+import type { SessionStep } from "@/utils/session";
 
-import SessionInfo from "@/components/TradingSession/SessionInfo";
-import SessionStatus from "@/components/TradingSession/SessionStatus";
-import SessionSuccess from "@/components/TradingSession/SessionSuccess";
-import SessionActions from "@/components/TradingSession/SessionActions";
-import SessionProgress from "@/components/TradingSession/SessionProgress";
-
-import type {
-  TradingSession as TradingSessionType,
-  SessionStep,
-} from "@/utils/session";
+const STEP_LABELS: Record<string, string> = {
+  checking: "Setting up trading account...",
+  deploying: "Deploying your wallet (one-time)...",
+  credentials: "Creating API credentials (one-time)...",
+  approvals: "Approving tokens for trading (one-time)...",
+};
 
 interface Props {
-  session: TradingSessionType | null;
   currentStep: SessionStep;
   error: Error | null;
   isComplete: boolean | undefined;
-  initialize: () => Promise<void>;
-  endSession: () => void;
+  onRetry: () => Promise<void>;
 }
 
 export default function TradingSession({
-  session,
   currentStep,
   error,
   isComplete,
-  initialize,
-  endSession,
+  onRetry,
 }: Props) {
   const { eoaAddress } = useWallet();
 
-  if (!eoaAddress) {
-    return null;
+  // Hide when not connected, or when session is fully ready
+  if (!eoaAddress || isComplete) return null;
+
+  const stepLabel = STEP_LABELS[currentStep];
+
+  // Show progress banner during initialization
+  if (stepLabel) {
+    return (
+      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 flex items-center gap-3">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-400 shrink-0" />
+        <div>
+          <p className="text-sm font-medium text-purple-300">{stepLabel}</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            You may be asked to sign — this is a one-time setup.
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="bg-white/5 backdrop-blur-md rounded-lg p-6 border border-white/10">
-      <SessionStatus isComplete={isComplete} />
-      <SessionInfo isComplete={isComplete} />
-      <SessionProgress currentStep={currentStep} />
-      {isComplete && session && <SessionSuccess session={session} />}
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded p-4 mb-4">
-          <p className="text-sm text-red-300 font-medium mb-2">Error</p>
-          <pre className="text-xs text-red-400 whitespace-pre-wrap">
-            {error.message}
-          </pre>
+  // Show error with retry
+  if (error) {
+    return (
+      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-red-300">
+              Trading setup failed
+            </p>
+            <p className="text-xs text-red-400 mt-1">{error.message}</p>
+          </div>
+          <button
+            onClick={onRetry}
+            className="px-4 py-2 text-sm bg-red-600/30 hover:bg-red-600/40 text-red-300 rounded-lg transition-colors shrink-0"
+          >
+            Retry
+          </button>
         </div>
-      )}
-
-      <div className="flex gap-3">
-        <SessionActions
-          isComplete={isComplete}
-          currentStep={currentStep}
-          onInitialize={initialize}
-          onEnd={endSession}
-        />
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }

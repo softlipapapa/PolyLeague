@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import useRelayClient from "@/hooks/useRelayClient";
 import { useWallet } from "@/providers/WalletContext";
 import useTokenApprovals from "@/hooks/useTokenApprovals";
@@ -25,7 +25,7 @@ export default function useTradingSession() {
     null
   );
 
-  const { eoaAddress, walletClient } = useWallet();
+  const { eoaAddress, walletClient, ethersSigner } = useWallet();
   const { createOrDeriveUserApiCredentials } = useUserApiCredentials();
   const { checkAllTokenApprovals, setAllTokenApprovals } = useTokenApprovals();
   const { derivedSafeAddressFromEoa, isSafeDeployed, deploySafe } =
@@ -34,7 +34,8 @@ export default function useTradingSession() {
     useRelayClient();
 
   // Always check for an existing trading session after wallet is connected by checking
-  // session object from localStorage to track the status of the user's trading session
+  // session object from localStorage to track the status of the user's trading session.
+  // If no stored session exists, auto-initialize so users don't need a manual button click.
   useEffect(() => {
     if (!eoaAddress) {
       setTradingSession(null);
@@ -49,7 +50,6 @@ export default function useTradingSession() {
     if (!stored) {
       setCurrentStep("idle");
       setSessionError(null);
-      return;
     }
   }, [eoaAddress]);
 
@@ -152,6 +152,31 @@ export default function useTradingSession() {
     deploySafe,
     createOrDeriveUserApiCredentials,
   ]);
+
+  // Auto-initialize trading session when wallet connects and no complete session exists
+  const hasAutoInitRef = useRef(false);
+  useEffect(() => {
+    if (!eoaAddress || !ethersSigner || !derivedSafeAddressFromEoa) return;
+
+    const stored = loadSession(eoaAddress);
+    const isComplete =
+      stored?.isSafeDeployed &&
+      stored?.hasApiCredentials &&
+      stored?.hasApprovals;
+
+    // Skip if already complete or already attempted auto-init for this address
+    if (isComplete || hasAutoInitRef.current) return;
+
+    hasAutoInitRef.current = true;
+    initializeTradingSession().catch((err) => {
+      console.error("Auto-init trading session failed:", err);
+    });
+  }, [eoaAddress, ethersSigner, derivedSafeAddressFromEoa, initializeTradingSession]);
+
+  // Reset auto-init ref when address changes (e.g. disconnect then reconnect)
+  useEffect(() => {
+    hasAutoInitRef.current = false;
+  }, [eoaAddress]);
 
   // This function clears the trading session and resets the state
   const endTradingSession = useCallback(() => {

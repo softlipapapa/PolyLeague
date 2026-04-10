@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@/providers/WalletContext";
 import WalletInfo from "@/components/Header/WalletInfo";
 import ConnectModal from "@/components/ConnectModal";
@@ -12,6 +12,13 @@ export default function Header({
 }) {
   const { eoaAddress, disconnect } = useWallet();
   const [showModal, setShowModal] = useState(false);
+
+  // Allow other components to open the connect modal via custom event
+  useEffect(() => {
+    const handler = () => setShowModal(true);
+    window.addEventListener("open-connect-modal", handler);
+    return () => window.removeEventListener("open-connect-modal", handler);
+  }, []);
 
   const handleDisconnect = async () => {
     try {

@@ -43,6 +43,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     relayClient,
     isGeoblocked,
     isTradingSessionComplete,
+    currentStep,
     safeAddress,
   } = useTrading();
 
@@ -125,6 +126,13 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     setIsModalOpen(false);
     setSelectedOutcome(null);
   };
+
+  const handleConnectPrompt = useCallback(() => {
+    window.dispatchEvent(new Event("open-connect-modal"));
+  }, []);
+
+  const isSessionInitializing =
+    currentStep !== "idle" && currentStep !== "complete";
 
   const handleRedeem = useCallback(
     async (position: PolymarketPosition, eventId: string) => {
@@ -218,11 +226,13 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
                 teamLogos={teamLogos || {}}
                 isConnected={!!eoaAddress}
                 isSessionReady={!!isTradingSessionComplete}
+                isSessionInitializing={isSessionInitializing}
                 positionsByToken={positionsByToken}
                 isRedeeming={isRedeeming && redeemingEventId === event.id}
                 canRedeem={!!relayClient}
                 onOutcomeClick={handleOutcomeClick}
                 onRedeem={handleRedeem}
+                onConnectPrompt={handleConnectPrompt}
               />
             ))}
 

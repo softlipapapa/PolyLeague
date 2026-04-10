@@ -12,6 +12,7 @@ interface LoLMarketCardProps {
   teamLogos: Record<string, string | null>;
   isConnected: boolean;
   isSessionReady: boolean;
+  isSessionInitializing: boolean;
   positionsByToken: Map<string, PolymarketPosition>;
   isRedeeming: boolean;
   canRedeem: boolean;
@@ -23,6 +24,7 @@ interface LoLMarketCardProps {
     negRisk: boolean
   ) => void;
   onRedeem: (position: PolymarketPosition, eventId: string) => void;
+  onConnectPrompt: () => void;
 }
 
 function TeamLogo({
@@ -97,11 +99,13 @@ export default function LoLMarketCard({
   teamLogos,
   isConnected,
   isSessionReady,
+  isSessionInitializing,
   positionsByToken,
   isRedeeming,
   canRedeem,
   onOutcomeClick,
   onRedeem,
+  onConnectPrompt,
 }: LoLMarketCardProps) {
   const { mainMarket, teamA, teamB, bestOf, league } = event;
   const status = event.status;
@@ -140,11 +144,8 @@ export default function LoLMarketCard({
     (ep) => ep.position.redeemable
   );
 
-  // Determine if the team buttons should be clickable
-  const canTrade =
-    !disabled && isConnected && isSessionReady && mainMarket?.acceptingOrders;
-  const needsConnect = !isConnected;
-  const needsSession = isConnected && !isSessionReady;
+  // Buttons are clickable if not disabled and market accepts orders
+  const canClick = !disabled && mainMarket?.acceptingOrders;
 
   return (
     <Card hover className="p-4">
@@ -183,7 +184,9 @@ export default function LoLMarketCard({
             {/* Team A */}
             <button
               onClick={() => {
-                if (!canTrade) return;
+                if (!canClick) return;
+                if (!isConnected) { onConnectPrompt(); return; }
+                if (!isSessionReady) return; // auto-init in progress
                 onOutcomeClick(
                   event.title,
                   mainMarket.outcomes[0],
@@ -192,9 +195,9 @@ export default function LoLMarketCard({
                   mainMarket.negRisk
                 );
               }}
-              disabled={!canTrade}
+              disabled={!canClick}
               className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all ${
-                !canTrade
+                !canClick
                   ? "opacity-60 cursor-default bg-white/5"
                   : "bg-white/5 hover:bg-green-500/10 hover:border-green-500/30 border border-transparent cursor-pointer"
               }`}
@@ -217,7 +220,9 @@ export default function LoLMarketCard({
             {/* Team B */}
             <button
               onClick={() => {
-                if (!canTrade) return;
+                if (!canClick) return;
+                if (!isConnected) { onConnectPrompt(); return; }
+                if (!isSessionReady) return; // auto-init in progress
                 onOutcomeClick(
                   event.title,
                   mainMarket.outcomes[1],
@@ -226,9 +231,9 @@ export default function LoLMarketCard({
                   mainMarket.negRisk
                 );
               }}
-              disabled={!canTrade}
+              disabled={!canClick}
               className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all ${
-                !canTrade
+                !canClick
                   ? "opacity-60 cursor-default bg-white/5"
                   : "bg-white/5 hover:bg-red-500/10 hover:border-red-500/30 border border-transparent cursor-pointer"
               }`}
@@ -293,14 +298,14 @@ export default function LoLMarketCard({
         )}
 
         {/* Connect / Session prompt */}
-        {needsConnect && (
+        {!isConnected && (
           <p className="text-xs text-center text-gray-500">
             Connect wallet to place bets
           </p>
         )}
-        {needsSession && (
-          <p className="text-xs text-center text-gray-500">
-            Start trading session to place bets
+        {isConnected && !isSessionReady && isSessionInitializing && (
+          <p className="text-xs text-center text-purple-400">
+            Setting up trading session...
           </p>
         )}
 

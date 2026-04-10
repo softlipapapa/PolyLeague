@@ -9,7 +9,6 @@ import GeoBlockedBanner from "@/components/GeoBlockedBanner";
 
 export default function Home() {
   const {
-    tradingSession,
     currentStep,
     sessionError,
     isTradingSessionComplete,
@@ -31,15 +30,13 @@ export default function Home() {
 
       <PolygonAssets />
 
-      {/* Hide trading session initialization when geoblocked */}
+      {/* Auto-init progress banner (hidden once session is ready) */}
       {!isGeoblocked && (
         <TradingSession
-          session={tradingSession}
           currentStep={currentStep}
           error={sessionError}
           isComplete={isTradingSessionComplete}
-          initialize={initializeTradingSession}
-          endSession={endTradingSession}
+          onRetry={initializeTradingSession}
         />
       )}
 
