@@ -365,5 +365,19 @@ Write all code comments, git commit messages, and console logs in English.
 - `components/Trading/MarketTabs.tsx` — Live/Upcoming/Positions/Orders tabs
 
 **Next steps:**
+- ~~Phase 1.3: Dark theme~~ ✅
+
+### 2026-04-09 — Force Dark Mode
+
+**Done:**
+- Fixed white background issue — app was only dark when OS dark mode was on
+- Forced dark background (`#0a0a12`) and light text in `globals.css`
+- Added `dark` class to `<html>` for Tailwind dark utilities
+
+**Updated files:**
+- `app/globals.css` — removed `prefers-color-scheme` media query, always dark
+- `app/layout.tsx` — added `className="dark"` to `<html>`
+
+**Next steps:**
 - Phase 1.2: Betting functionality via Builder Relayer
-- Phase 1.3: Dark esports-themed UI
+- Esports-themed UI polish (fonts, colors, visual design)
