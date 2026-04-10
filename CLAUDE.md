@@ -379,5 +379,29 @@ Write all code comments, git commit messages, and console logs in English.
 - `app/layout.tsx` — added `className="dark"` to `<html>`
 
 **Next steps:**
-- Phase 1.2: Betting functionality via Builder Relayer
+- ~~Phase 1.2: Betting functionality via Builder Relayer~~ (in progress)
+- Esports-themed UI polish (fonts, colors, visual design)
+
+### 2026-04-10 — Phase 1.2: Auto-Init Trading Session
+
+**Done:**
+- Trading session now auto-initializes when wallet connects (no manual button)
+- Replaced verbose TradingSession component with compact progress banner showing step labels
+- "You may be asked to sign — this is a one-time setup" messaging to reduce user confusion
+- Error state shows retry button instead of full session panel
+- Clicking a team without wallet opens connect modal (was silently failing)
+- Clicking a team during session init is blocked with "Setting up trading session..." prompt
+- Header listens for `open-connect-modal` custom event so any component can trigger connect
+
+**Updated files:**
+- `hooks/useTradingSession.ts` — auto-init effect with ref guard, added `ethersSigner` dep
+- `components/TradingSession/index.tsx` — rewritten as progress-only banner
+- `app/page.tsx` — simplified TradingSession props
+- `components/LoL/LoLMarketCard.tsx` — buttons clickable without session, prompt on click
+- `components/LoL/LoLMarkets.tsx` — passes `isSessionInitializing`, `onConnectPrompt`
+- `components/Header/index.tsx` — listens for `open-connect-modal` event
+
+**Next steps:**
+- Test full betting flow end-to-end (connect → sign → place order)
+- Debug "Error loading balance" (RPC may need investigation)
 - Esports-themed UI polish (fonts, colors, visual design)
