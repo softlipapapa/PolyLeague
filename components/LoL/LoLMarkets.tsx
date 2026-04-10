@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useTrading } from "@/providers/TradingProvider";
-import useLoLMarkets from "@/hooks/useLoLMarkets";
+import useLoLMarkets, { type MatchStatus } from "@/hooks/useLoLMarkets";
 import useTeamLogos from "@/hooks/useTeamLogos";
 
 import ErrorState from "@/components/shared/ErrorState";
@@ -12,7 +12,11 @@ import LeagueFilter from "@/components/LoL/LeagueFilter";
 import LoLMarketCard from "@/components/LoL/LoLMarketCard";
 import OrderPlacementModal from "@/components/Trading/OrderModal";
 
-export default function LoLMarkets() {
+interface LoLMarketsProps {
+  status: MatchStatus;
+}
+
+export default function LoLMarkets({ status }: LoLMarketsProps) {
   const [activeLeague, setActiveLeague] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState<{
@@ -25,12 +29,27 @@ export default function LoLMarkets() {
 
   const { clobClient, isGeoblocked } = useTrading();
 
-  const { data, isLoading, error } = useLoLMarkets({
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLoLMarkets({
     league: activeLeague,
+    status,
   });
 
-  const events = data?.events || [];
-  const leagues = data?.leagues || [];
+  // Flatten pages into single events list
+  const events = useMemo(
+    () => data?.pages.flatMap((page) => page.events) || [],
+    [data]
+  );
+  const leagues = useMemo(
+    () => data?.pages[0]?.leagues || [],
+    [data]
+  );
 
   // Collect all team names for logo lookup
   const teamNames = useMemo(
@@ -40,21 +59,45 @@ export default function LoLMarkets() {
   );
   const { data: teamLogos } = useTeamLogos(teamNames);
 
-  const handleOutcomeClick = (
-    marketTitle: string,
-    outcome: string,
-    price: number,
-    tokenId: string,
-    negRisk: boolean
-  ) => {
-    setSelectedOutcome({ marketTitle, outcome, price, tokenId, negRisk });
-    setIsModalOpen(true);
-  };
+  // Infinite scroll observer
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const handleOutcomeClick = useCallback(
+    (
+      marketTitle: string,
+      outcome: string,
+      price: number,
+      tokenId: string,
+      negRisk: boolean
+    ) => {
+      setSelectedOutcome({ marketTitle, outcome, price, tokenId, negRisk });
+      setIsModalOpen(true);
+    },
+    []
+  );
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedOutcome(null);
   };
+
+  const statusLabel = status === "live" ? "Live" : "Upcoming";
 
   return (
     <>
@@ -71,13 +114,16 @@ export default function LoLMarkets() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold">
-            LoL Matches {events.length > 0 ? `(${events.length})` : ""}
+            {statusLabel} Matches{" "}
+            {events.length > 0 ? `(${events.length})` : ""}
           </h3>
-          <p className="text-xs text-gray-400">Sorted by date (newest first)</p>
+          <p className="text-xs text-gray-400">
+            {status === "upcoming" ? "Soonest first" : "Newest first"}
+          </p>
         </div>
 
         {/* Loading State */}
-        {isLoading && <LoadingState message="Loading LoL markets..." />}
+        {isLoading && <LoadingState message={`Loading ${statusLabel.toLowerCase()} matches...`} />}
 
         {/* Error State */}
         {error && !isLoading && (
@@ -87,11 +133,11 @@ export default function LoLMarkets() {
         {/* Empty State */}
         {!isLoading && !error && events.length === 0 && (
           <EmptyState
-            title="No LoL Markets"
+            title={`No ${statusLabel} Matches`}
             message={
               activeLeague
-                ? `No active ${activeLeague} markets found.`
-                : "No active League of Legends markets found on Polymarket."
+                ? `No ${statusLabel.toLowerCase()} ${activeLeague} matches found.`
+                : `No ${statusLabel.toLowerCase()} League of Legends matches on Polymarket.`
             }
           />
         )}
@@ -108,6 +154,13 @@ export default function LoLMarkets() {
                 onOutcomeClick={handleOutcomeClick}
               />
             ))}
+
+            {/* Infinite scroll trigger */}
+            <div ref={loadMoreRef} className="h-4" />
+
+            {isFetchingNextPage && (
+              <LoadingState message="Loading more matches..." />
+            )}
           </div>
         )}
       </div>

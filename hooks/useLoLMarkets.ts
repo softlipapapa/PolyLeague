@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 export interface LoLMarket {
   id: string;
@@ -41,33 +41,40 @@ export interface LoLEvent {
   markets: LoLMarket[];
   marketCount: number;
   gameStartTime: string | null;
+  status: "live" | "upcoming" | "resolved";
 }
 
-interface LoLMarketsResponse {
+interface LoLMarketsPage {
   events: LoLEvent[];
   leagues: string[];
+  hasMore: boolean;
+  nextOffset: number;
 }
+
+export type MatchStatus = "live" | "upcoming";
 
 interface UseLoLMarketsOptions {
   league?: string | null;
-  includeResolved?: boolean;
+  status?: MatchStatus;
   limit?: number;
 }
 
 export default function useLoLMarkets(options: UseLoLMarketsOptions = {}) {
-  const { league = null, includeResolved = false, limit = 50 } = options;
+  const { league = null, status = "live", limit = 20 } = options;
 
-  return useQuery({
-    queryKey: ["lol-markets", league, includeResolved, limit],
-    queryFn: async (): Promise<LoLMarketsResponse> => {
-      let url = `/api/lol-markets?limit=${limit}`;
+  return useInfiniteQuery({
+    queryKey: ["lol-markets", league, status, limit],
+    queryFn: async ({ pageParam = 0 }): Promise<LoLMarketsPage> => {
+      let url = `/api/lol-markets?limit=${limit}&offset=${pageParam}&status=${status}`;
       if (league) url += `&league=${encodeURIComponent(league)}`;
-      if (includeResolved) url += `&include_resolved=true`;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch LoL markets");
       return response.json();
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.nextOffset : undefined,
     staleTime: 15_000,
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,

@@ -341,6 +341,29 @@ Write all code comments, git commit messages, and console logs in English.
 - `app/page.tsx` — markets visible without login
 
 **Next steps:**
-- Add team logo images to LoL market cards
+- ~~Add team logo images to LoL market cards~~ ✅
+- ~~Lazy loading + Live/Upcoming tabs~~ ✅
+
+### 2026-04-09 — Team Logos, Lazy Loading, Live/Upcoming Tabs
+
+**Done:**
+- Team logos fetched from LoL Esports API (1500+ teams) with fuzzy name matching + initials fallback
+- Removed "All Markets" tab — app is LoL-only
+- Split into **Live** and **Upcoming** tabs (upcoming sorted soonest first)
+- Lazy loading via `useInfiniteQuery` + IntersectionObserver (infinite scroll)
+- API supports `offset`, `status` (live/upcoming/all) params for pagination
+
+**New files:**
+- `app/api/team-logos/route.ts` — Team logo lookup with in-memory cache
+- `hooks/useTeamLogos.ts` — Batch team logo resolution hook
+
+**Updated files:**
+- `app/api/lol-markets/route.ts` — pagination, status filter, upcoming sort
+- `hooks/useLoLMarkets.ts` — switched to useInfiniteQuery
+- `components/LoL/LoLMarkets.tsx` — infinite scroll, accepts status prop
+- `components/LoL/LoLMarketCard.tsx` — team logos with fallback
+- `components/Trading/MarketTabs.tsx` — Live/Upcoming/Positions/Orders tabs
+
+**Next steps:**
 - Phase 1.2: Betting functionality via Builder Relayer
 - Phase 1.3: Dark esports-themed UI
