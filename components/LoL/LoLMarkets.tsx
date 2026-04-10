@@ -1,9 +1,15 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWallet } from "@/providers/WalletContext";
 import { useTrading } from "@/providers/TradingProvider";
 import useLoLMarkets, { type MatchStatus } from "@/hooks/useLoLMarkets";
 import useTeamLogos from "@/hooks/useTeamLogos";
+import useUserPositions, {
+  type PolymarketPosition,
+} from "@/hooks/useUserPositions";
+import useRedeemPosition from "@/hooks/useRedeemPosition";
 
 import ErrorState from "@/components/shared/ErrorState";
 import EmptyState from "@/components/shared/EmptyState";
@@ -11,6 +17,9 @@ import LoadingState from "@/components/shared/LoadingState";
 import LeagueFilter from "@/components/LoL/LeagueFilter";
 import LoLMarketCard from "@/components/LoL/LoLMarketCard";
 import OrderPlacementModal from "@/components/Trading/OrderModal";
+
+import { createPollingInterval } from "@/utils/polling";
+import { POLLING_DURATION, POLLING_INTERVAL } from "@/constants/query";
 
 interface LoLMarketsProps {
   status: MatchStatus;
@@ -26,8 +35,20 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     tokenId: string;
     negRisk: boolean;
   } | null>(null);
+  const [redeemingEventId, setRedeemingEventId] = useState<string | null>(null);
 
-  const { clobClient, isGeoblocked } = useTrading();
+  const { eoaAddress } = useWallet();
+  const {
+    clobClient,
+    relayClient,
+    isGeoblocked,
+    isTradingSessionComplete,
+    safeAddress,
+  } = useTrading();
+
+  const { data: positions } = useUserPositions(safeAddress);
+  const { redeemPosition, isRedeeming } = useRedeemPosition();
+  const queryClient = useQueryClient();
 
   const {
     data,
@@ -46,10 +67,18 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     () => data?.pages.flatMap((page) => page.events) || [],
     [data]
   );
-  const leagues = useMemo(
-    () => data?.pages[0]?.leagues || [],
-    [data]
-  );
+  const leagues = useMemo(() => data?.pages[0]?.leagues || [], [data]);
+
+  // Build a map of tokenId -> position for quick lookup
+  const positionsByToken = useMemo(() => {
+    const map = new Map<string, PolymarketPosition>();
+    if (positions) {
+      for (const p of positions) {
+        map.set(p.asset, p);
+      }
+    }
+    return map;
+  }, [positions]);
 
   // Collect all team names for logo lookup
   const teamNames = useMemo(
@@ -97,6 +126,38 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     setSelectedOutcome(null);
   };
 
+  const handleRedeem = useCallback(
+    async (position: PolymarketPosition, eventId: string) => {
+      if (!relayClient) return;
+      setRedeemingEventId(eventId);
+      try {
+        await redeemPosition(relayClient, {
+          conditionId: position.conditionId,
+          outcomeIndex: position.outcomeIndex,
+          negativeRisk: position.negativeRisk,
+          size: position.size,
+        });
+        queryClient.invalidateQueries({ queryKey: ["polymarket-positions"] });
+        queryClient.invalidateQueries({ queryKey: ["polygon-balances"] });
+        createPollingInterval(
+          () => {
+            queryClient.invalidateQueries({
+              queryKey: ["polymarket-positions"],
+            });
+            queryClient.invalidateQueries({ queryKey: ["polygon-balances"] });
+          },
+          POLLING_INTERVAL,
+          POLLING_DURATION
+        );
+      } catch (err) {
+        console.error("Failed to redeem:", err);
+      } finally {
+        setRedeemingEventId(null);
+      }
+    },
+    [relayClient, redeemPosition, queryClient]
+  );
+
   const statusLabel = status === "live" ? "Live" : "Upcoming";
 
   return (
@@ -123,7 +184,11 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
         </div>
 
         {/* Loading State */}
-        {isLoading && <LoadingState message={`Loading ${statusLabel.toLowerCase()} matches...`} />}
+        {isLoading && (
+          <LoadingState
+            message={`Loading ${statusLabel.toLowerCase()} matches...`}
+          />
+        )}
 
         {/* Error State */}
         {error && !isLoading && (
@@ -151,7 +216,13 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
                 event={event}
                 disabled={isGeoblocked}
                 teamLogos={teamLogos || {}}
+                isConnected={!!eoaAddress}
+                isSessionReady={!!isTradingSessionComplete}
+                positionsByToken={positionsByToken}
+                isRedeeming={isRedeeming && redeemingEventId === event.id}
+                canRedeem={!!relayClient}
                 onOutcomeClick={handleOutcomeClick}
+                onRedeem={handleRedeem}
               />
             ))}
 
