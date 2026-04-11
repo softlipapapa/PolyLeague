@@ -35,7 +35,12 @@ export default function PolygonAssets() {
     return (
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-4">Trading Balance</h2>
-        <p className="text-center text-red-400">Error loading balance</p>
+        <div className="bg-white/5 rounded-lg p-6 text-center">
+          <p className="text-5xl font-bold">$0.00</p>
+          <p className="text-xs text-gray-500 mt-2">
+            Could not load balance — check your RPC connection
+          </p>
+        </div>
       </Card>
     );
   }

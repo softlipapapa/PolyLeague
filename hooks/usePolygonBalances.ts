@@ -25,11 +25,12 @@ export default function usePolygonBalances(address: string | undefined) {
 
       return balance;
     },
-    enabled: !!address,
+    enabled: !!address && !!publicClient,
     staleTime: QUERY_STALE_TIMES.BALANCE,
     refetchInterval: QUERY_REFETCH_INTERVALS.BALANCE,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
+    retry: 2,
   });
 
   const formattedUsdcBalance = usdcBalance
