@@ -472,5 +472,14 @@ Write all code comments, git commit messages, and console logs in English.
 - `components/shared/EmptyState.tsx` — quieter
 - `constants/ui.ts` — glass base style
 
+### 2026-04-11 — League Name Cleanup
+
+**Done:**
+- Strip "Regular Season", "Playoffs", "Play-Ins", "Groups", "Finals" from league filter labels
+- e.g. "TCL Regular Season" → "TCL", "LFL Regular Season" → "LFL"
+
+**Updated files:**
+- `app/api/lol-markets/route.ts` — regex strip on parsed league name
+
 **Next steps:**
 - Test full betting flow live (connect → sign → place order on real market)
