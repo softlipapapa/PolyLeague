@@ -31,7 +31,10 @@ function parseEvent(event: any) {
     /^LoL:\s*(.+?)\s+vs\s+(.+?)\s*\(BO(\d+)\)\s*-\s*(.+)$/
   );
 
-  const parsedLeague = titleMatch ? titleMatch[4].trim() : null;
+  const rawLeague = titleMatch ? titleMatch[4].trim() : null;
+  const parsedLeague = rawLeague
+    ? rawLeague.replace(/\s*(Regular Season|Playoffs|Play-Ins?|Groups?|Finals?)\s*/gi, "").trim() || rawLeague
+    : null;
   const teamA = titleMatch ? titleMatch[1].trim() : null;
   const teamB = titleMatch ? titleMatch[2].trim() : null;
   const bestOf = titleMatch ? parseInt(titleMatch[3]) : null;
