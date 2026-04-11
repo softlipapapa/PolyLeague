@@ -410,6 +410,32 @@ Write all code comments, git commit messages, and console logs in English.
 - `hooks/usePolygonBalances.ts` — added retry, publicClient enabled guard
 - `components/PolygonAssets/index.tsx` — graceful error state
 
+### 2026-04-10 — Esports UI Polish
+
+**Done:**
+- Replaced Geist fonts with Inter (body) + JetBrains Mono (data/numbers)
+- Gradient PolyLeague logo + branded connect button
+- Darker background (#080810), refined card/border opacities throughout
+- Match cards: larger team logos, mono font odds with subtle % sign, glow-on-hover
+- Tab bar: purple active state, compact rounded pills
+- Balance card: cleaner layout with mono font
+- Connect modal: refined spacing, hover colors
+- League filter: uppercase tracking, smaller pills
+- Custom scrollbar, `.font-data` utility, `.glow-*` classes
+- Narrowed max-width to `max-w-4xl` for better readability
+- Updated metadata title/description
+
+**Updated files:**
+- `app/globals.css` — new background, font vars, glow/scrollbar utilities
+- `app/layout.tsx` — Inter + JetBrains Mono, updated metadata
+- `app/page.tsx` — narrower max-width, responsive padding
+- `components/Header/index.tsx` — gradient logo + button
+- `components/LoL/LoLMarketCard.tsx` — polished cards
+- `components/LoL/LeagueFilter.tsx` — uppercase compact pills
+- `components/Trading/MarketTabs.tsx` — purple tabs, removed Card wrapper
+- `components/PolygonAssets/index.tsx` — cleaner balance card
+- `components/ConnectModal.tsx` — refined modal
+- `constants/ui.ts` — updated base card styles
+
 **Next steps:**
 - Test full betting flow live (connect → sign → place order on real market)
-- Esports-themed UI polish (fonts, colors, visual design)
