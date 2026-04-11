@@ -46,24 +46,24 @@ export default function PolygonAssets() {
   }
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Trading Balance</h2>
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold">Trading Balance</h2>
         <button
           onClick={() => setIsTransferModalOpen(true)}
-          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          className="px-3 py-1.5 text-xs font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-lg transition-all"
         >
           Send
         </button>
       </div>
 
-      <div className="bg-white/5 rounded-lg p-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <h3 className="text-lg font-semibold text-white/70">USDC.e</h3>
-          <Badge className="text-xs px-2 py-1">Polygon</Badge>
+      <div className="bg-white/3 rounded-xl p-5 text-center border border-white/6">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <span className="text-sm text-gray-400">USDC.e</span>
+          <Badge className="text-[10px] px-1.5 py-0.5">Polygon</Badge>
         </div>
 
-        <p className="text-5xl font-bold">${formattedUsdcBalance}</p>
+        <p className="text-4xl font-bold font-data">${formattedUsdcBalance}</p>
       </div>
 
       <TransferModal

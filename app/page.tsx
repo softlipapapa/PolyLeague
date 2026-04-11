@@ -20,7 +20,7 @@ export default function Home() {
   } = useTrading();
 
   return (
-    <div className="p-6 min-h-screen flex flex-col gap-6 max-w-7xl mx-auto">
+    <div className="px-4 sm:px-6 py-6 min-h-screen flex flex-col gap-5 max-w-4xl mx-auto">
       <Header onEndSession={endTradingSession} />
 
       {/* Show geoblock banner if user is in blocked region */}

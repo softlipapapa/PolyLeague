@@ -31,14 +31,21 @@ export default function Header({
 
   return (
     <div className="flex items-center justify-between w-full">
-      <div className="text-lg font-semibold text-white">PolyLeague</div>
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-purple-500 to-blue-500 flex items-center justify-center font-bold text-white text-sm">
+          PL
+        </div>
+        <span className="text-xl font-bold tracking-tight bg-linear-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+          PolyLeague
+        </span>
+      </div>
 
       <div>
         {eoaAddress ? (
           <WalletInfo onDisconnect={handleDisconnect} />
         ) : (
           <button
-            className="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3 hover:bg-white/20 cursor-pointer transition-colors font-semibold select-none"
+            className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg px-5 py-2.5 cursor-pointer transition-all font-semibold text-sm select-none shadow-lg shadow-purple-600/20"
             onClick={() => setShowModal(true)}
           >
             Connect Wallet

@@ -41,7 +41,7 @@ function TeamLogo({
       <img
         src={logoUrl}
         alt={teamName}
-        className="w-10 h-10 object-contain"
+        className="w-11 h-11 object-contain drop-shadow-lg"
         onError={() => setImgError(true)}
       />
     );
@@ -55,7 +55,7 @@ function TeamLogo({
     .toUpperCase();
 
   return (
-    <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+    <div className="w-11 h-11 rounded-xl bg-linear-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center">
       <span className="text-xs font-bold text-purple-300">{initials}</span>
     </div>
   );
@@ -88,9 +88,9 @@ function formatGameTime(isoString: string | null): string {
 }
 
 const statusStyles = {
-  live: "bg-green-500/20 text-green-400 border border-green-500/40 animate-pulse",
-  upcoming: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
-  resolved: "bg-gray-500/20 text-gray-400 border border-gray-500/30",
+  live: "bg-green-500/15 text-green-400 border border-green-500/30 animate-pulse",
+  upcoming: "bg-blue-500/15 text-blue-300 border border-blue-500/25",
+  resolved: "bg-gray-500/15 text-gray-400 border border-gray-500/25",
 };
 
 export default function LoLMarketCard({
@@ -148,45 +148,46 @@ export default function LoLMarketCard({
   const canClick = !disabled && mainMarket?.acceptingOrders;
 
   return (
-    <Card hover className="p-4">
+    <Card hover className="p-5">
       <div className="flex flex-col gap-3">
         {/* Top row: league badge, status, time, volume */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {league && (
-              <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/25">
                 {league}
               </span>
             )}
             <span
-              className={`px-2 py-0.5 rounded text-xs font-bold ${statusStyles[status]}`}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${statusStyles[status]}`}
             >
               {statusLabel}
             </span>
             {bestOf && (
-              <span className="text-xs text-gray-500">BO{bestOf}</span>
+              <span className="text-[11px] text-gray-500 font-medium">BO{bestOf}</span>
             )}
             {hasPosition && (
-              <span className="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+              <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-yellow-500/15 text-yellow-300 border border-yellow-500/25">
                 Your Bet
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-gray-400">
+          <div className="flex items-center gap-3 text-[11px] text-gray-500 font-data">
             <span>{formatGameTime(event.gameStartTime)}</span>
+            <span className="text-gray-600">|</span>
             <span>Vol {formatVolume(event.volume)}</span>
           </div>
         </div>
 
         {/* Match display: Team A vs Team B with odds */}
         {mainMarket && teamA && teamB ? (
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mt-1">
             {/* Team A */}
             <button
               onClick={() => {
                 if (!canClick) return;
                 if (!isConnected) { onConnectPrompt(); return; }
-                if (!isSessionReady) return; // auto-init in progress
+                if (!isSessionReady) return;
                 onOutcomeClick(
                   event.title,
                   mainMarket.outcomes[0],
@@ -196,33 +197,36 @@ export default function LoLMarketCard({
                 );
               }}
               disabled={!canClick}
-              className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all ${
+              className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
                 !canClick
-                  ? "opacity-60 cursor-default bg-white/5"
-                  : "bg-white/5 hover:bg-green-500/10 hover:border-green-500/30 border border-transparent cursor-pointer"
+                  ? "opacity-50 cursor-default bg-white/3"
+                  : "bg-white/3 hover:bg-green-500/10 border border-white/6 hover:border-green-500/30 cursor-pointer hover:glow-green"
               }`}
             >
               <TeamLogo
                 teamName={teamA}
                 logoUrl={teamLogos[teamA] ?? null}
               />
-              <span className="font-semibold text-sm text-white truncate max-w-full">
+              <span className="font-semibold text-sm text-white/90 truncate max-w-full">
                 {teamA}
               </span>
-              <span className="text-lg font-bold text-green-400">
-                {Math.round(teamAOdds * 100)}%
+              <span className="text-xl font-bold font-data text-green-400">
+                {Math.round(teamAOdds * 100)}
+                <span className="text-sm text-green-400/60">%</span>
               </span>
             </button>
 
             {/* VS */}
-            <span className="text-gray-500 font-bold text-sm">VS</span>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-gray-600 font-bold text-xs tracking-widest">VS</span>
+            </div>
 
             {/* Team B */}
             <button
               onClick={() => {
                 if (!canClick) return;
                 if (!isConnected) { onConnectPrompt(); return; }
-                if (!isSessionReady) return; // auto-init in progress
+                if (!isSessionReady) return;
                 onOutcomeClick(
                   event.title,
                   mainMarket.outcomes[1],
@@ -232,21 +236,22 @@ export default function LoLMarketCard({
                 );
               }}
               disabled={!canClick}
-              className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-all ${
+              className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
                 !canClick
-                  ? "opacity-60 cursor-default bg-white/5"
-                  : "bg-white/5 hover:bg-red-500/10 hover:border-red-500/30 border border-transparent cursor-pointer"
+                  ? "opacity-50 cursor-default bg-white/3"
+                  : "bg-white/3 hover:bg-red-500/10 border border-white/6 hover:border-red-500/30 cursor-pointer hover:glow-red"
               }`}
             >
               <TeamLogo
                 teamName={teamB}
                 logoUrl={teamLogos[teamB] ?? null}
               />
-              <span className="font-semibold text-sm text-white truncate max-w-full">
+              <span className="font-semibold text-sm text-white/90 truncate max-w-full">
                 {teamB}
               </span>
-              <span className="text-lg font-bold text-red-400">
-                {Math.round(teamBOdds * 100)}%
+              <span className="text-xl font-bold font-data text-red-400">
+                {Math.round(teamBOdds * 100)}
+                <span className="text-sm text-red-400/60">%</span>
               </span>
             </button>
           </div>
@@ -256,8 +261,8 @@ export default function LoLMarketCard({
 
         {/* Inline position display */}
         {hasPosition && (
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3 space-y-2">
-            {eventPositions.map(({ position, tokenIndex }) => (
+          <div className="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-3 space-y-2">
+            {eventPositions.map(({ position }) => (
               <div
                 key={position.asset}
                 className="flex items-center justify-between text-sm"
@@ -266,13 +271,13 @@ export default function LoLMarketCard({
                   <span className="text-yellow-300 font-medium">
                     {position.outcome}
                   </span>
-                  <span className="text-gray-400">
+                  <span className="text-gray-500 font-data text-xs">
                     {formatShares(position.size)} shares @{" "}
                     {formatCurrency(position.avgPrice, 3)}
                   </span>
                 </div>
                 <span
-                  className={`font-semibold ${position.cashPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+                  className={`font-bold font-data ${position.cashPnl >= 0 ? "text-green-400" : "text-red-400"}`}
                 >
                   {position.cashPnl >= 0 ? "+" : ""}
                   {formatCurrency(position.cashPnl)}

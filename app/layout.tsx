@@ -1,23 +1,23 @@
 import Providers from "@/providers";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { cn } from "@/utils/classNames";
 import "./globals.css";
 import type { Metadata } from "next";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Polymarket Safe Trader - Magic EOA",
+  title: "PolyLeague — LoL Esports Predictions",
   description:
-    "Polymarket demo using Magic Link for authentication and embedded wallets, trading through a Safe Wallet using the CLOB and Relayer client",
+    "Bet on League of Legends matches with real-time odds on Polymarket",
 };
 
 export default function RootLayout({
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={cn(geistSans.variable, geistMono.variable, "antialiased")}
+        className={cn(inter.variable, jetbrainsMono.variable, "antialiased")}
       >
         <Providers>{children}</Providers>
       </body>
