@@ -4,10 +4,10 @@ import { useWallet } from "@/providers/WalletContext";
 import type { SessionStep } from "@/utils/session";
 
 const STEP_LABELS: Record<string, string> = {
-  checking: "Setting up trading account...",
-  deploying: "Deploying your wallet (one-time)...",
-  credentials: "Creating API credentials (one-time)...",
-  approvals: "Approving tokens for trading (one-time)...",
+  checking: "Setting up trading account",
+  deploying: "Deploying wallet",
+  credentials: "Creating credentials",
+  approvals: "Approving tokens",
 };
 
 interface Props {
@@ -25,44 +25,38 @@ export default function TradingSession({
 }: Props) {
   const { eoaAddress } = useWallet();
 
-  // Hide when not connected, or when session is fully ready
   if (!eoaAddress || isComplete) return null;
 
   const stepLabel = STEP_LABELS[currentStep];
 
-  // Show progress banner during initialization
   if (stepLabel) {
     return (
-      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 flex items-center gap-3">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-400 shrink-0" />
-        <div>
-          <p className="text-sm font-medium text-purple-300">{stepLabel}</p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            You may be asked to sign — this is a one-time setup.
-          </p>
+      <div className="glass px-5 py-3 flex items-center gap-3">
+        <div className="relative flex h-3 w-3 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-50" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500" />
+        </div>
+        <div className="flex items-baseline gap-2">
+          <p className="text-sm font-medium text-white/70">{stepLabel}</p>
+          <p className="text-[11px] text-white/20">One-time setup</p>
         </div>
       </div>
     );
   }
 
-  // Show error with retry
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-red-300">
-              Trading setup failed
-            </p>
-            <p className="text-xs text-red-400 mt-1">{error.message}</p>
-          </div>
-          <button
-            onClick={onRetry}
-            className="px-4 py-2 text-sm bg-red-600/30 hover:bg-red-600/40 text-red-300 rounded-lg transition-colors shrink-0"
-          >
-            Retry
-          </button>
+      <div className="glass px-5 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-red-400/80">Setup failed</p>
+          <p className="text-[11px] text-white/20 mt-0.5">{error.message}</p>
         </div>
+        <button
+          onClick={onRetry}
+          className="px-3 py-1.5 text-xs font-medium text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-all cursor-pointer"
+        >
+          Retry
+        </button>
       </div>
     );
   }

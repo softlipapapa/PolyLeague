@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import type { LoLEvent } from "@/hooks/useLoLMarkets";
 import type { PolymarketPosition } from "@/hooks/useUserPositions";
-import Card from "@/components/shared/Card";
 import { formatVolume, formatCurrency, formatShares } from "@/utils/formatting";
 
 interface LoLMarketCardProps {
@@ -30,18 +29,21 @@ interface LoLMarketCardProps {
 function TeamLogo({
   teamName,
   logoUrl,
+  size = "md",
 }: {
   teamName: string;
   logoUrl: string | null;
+  size?: "sm" | "md";
 }) {
   const [imgError, setImgError] = useState(false);
+  const px = size === "sm" ? "w-8 h-8" : "w-10 h-10";
 
   if (logoUrl && !imgError) {
     return (
       <img
         src={logoUrl}
         alt={teamName}
-        className="w-11 h-11 object-contain drop-shadow-lg"
+        className={`${px} object-contain`}
         onError={() => setImgError(true)}
       />
     );
@@ -55,8 +57,8 @@ function TeamLogo({
     .toUpperCase();
 
   return (
-    <div className="w-11 h-11 rounded-xl bg-linear-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center">
-      <span className="text-xs font-bold text-purple-300">{initials}</span>
+    <div className={`${px} rounded-lg bg-white/5 flex items-center justify-center`}>
+      <span className="text-[10px] font-bold text-white/40">{initials}</span>
     </div>
   );
 }
@@ -87,12 +89,6 @@ function formatGameTime(isoString: string | null): string {
   });
 }
 
-const statusStyles = {
-  live: "bg-green-500/15 text-green-400 border border-green-500/30 animate-pulse",
-  upcoming: "bg-blue-500/15 text-blue-300 border border-blue-500/25",
-  resolved: "bg-gray-500/15 text-gray-400 border border-gray-500/25",
-};
-
 export default function LoLMarketCard({
   event,
   disabled = false,
@@ -109,8 +105,6 @@ export default function LoLMarketCard({
 }: LoLMarketCardProps) {
   const { mainMarket, teamA, teamB, bestOf, league } = event;
   const status = event.status;
-  const statusLabel =
-    status === "live" ? "Live" : status === "upcoming" ? "Upcoming" : "Resolved";
 
   const teamAOdds = mainMarket
     ? parseFloat(mainMarket.outcomePrices[0] || "0")
@@ -118,8 +112,9 @@ export default function LoLMarketCard({
   const teamBOdds = mainMarket
     ? parseFloat(mainMarket.outcomePrices[1] || "0")
     : 0;
+  const teamAPct = Math.round(teamAOdds * 100);
+  const teamBPct = Math.round(teamBOdds * 100);
 
-  // Find user positions for this event's markets
   const eventPositions = useMemo(() => {
     const positions: {
       position: PolymarketPosition;
@@ -138,189 +133,178 @@ export default function LoLMarketCard({
   }, [mainMarket, positionsByToken]);
 
   const hasPosition = eventPositions.length > 0;
-
-  // Check if any position is redeemable
   const redeemablePosition = eventPositions.find(
     (ep) => ep.position.redeemable
   );
-
-  // Buttons are clickable if not disabled and market accepts orders
   const canClick = !disabled && mainMarket?.acceptingOrders;
 
+  const handleTeamClick = (teamIndex: 0 | 1) => {
+    if (!canClick) return;
+    if (!isConnected) { onConnectPrompt(); return; }
+    if (!isSessionReady) return;
+    if (!mainMarket) return;
+    onOutcomeClick(
+      event.title,
+      mainMarket.outcomes[teamIndex],
+      teamIndex === 0 ? teamAOdds : teamBOdds,
+      mainMarket.clobTokenIds[teamIndex],
+      mainMarket.negRisk
+    );
+  };
+
   return (
-    <Card hover className="p-5">
-      <div className="flex flex-col gap-3">
-        {/* Top row: league badge, status, time, volume */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            {league && (
-              <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/25">
-                {league}
-              </span>
-            )}
-            <span
-              className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${statusStyles[status]}`}
-            >
-              {statusLabel}
+    <div className="glass glass-hover group">
+      {/* Meta row */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <div className="flex items-center gap-2">
+          {league && (
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-purple-400/80">
+              {league}
             </span>
-            {bestOf && (
-              <span className="text-[11px] text-gray-500 font-medium">BO{bestOf}</span>
-            )}
-            {hasPosition && (
-              <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-yellow-500/15 text-yellow-300 border border-yellow-500/25">
-                Your Bet
+          )}
+          {league && <span className="text-white/10">|</span>}
+          {status === "live" ? (
+            <span className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
               </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-[11px] text-gray-500 font-data">
-            <span>{formatGameTime(event.gameStartTime)}</span>
-            <span className="text-gray-600">|</span>
-            <span>Vol {formatVolume(event.volume)}</span>
-          </div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-green-400">Live</span>
+            </span>
+          ) : (
+            <span className="text-[10px] font-medium text-white/30">
+              {formatGameTime(event.gameStartTime)}
+            </span>
+          )}
+          {bestOf && (
+            <span className="text-[10px] text-white/20 font-medium">BO{bestOf}</span>
+          )}
         </div>
+        <div className="flex items-center gap-2">
+          {hasPosition && (
+            <span className="text-[10px] font-semibold text-amber-400/80 uppercase tracking-wider">
+              Position
+            </span>
+          )}
+          <span className="text-[10px] text-white/20 font-data">
+            {formatVolume(event.volume)} vol
+          </span>
+        </div>
+      </div>
 
-        {/* Match display: Team A vs Team B with odds */}
-        {mainMarket && teamA && teamB ? (
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mt-1">
-            {/* Team A */}
+      {/* Main match area */}
+      {mainMarket && teamA && teamB ? (
+        <div className="px-5 pb-4">
+          {/* Teams row */}
+          <div className="flex items-center gap-3 mb-3">
+            {/* Team A button */}
             <button
-              onClick={() => {
-                if (!canClick) return;
-                if (!isConnected) { onConnectPrompt(); return; }
-                if (!isSessionReady) return;
-                onOutcomeClick(
-                  event.title,
-                  mainMarket.outcomes[0],
-                  teamAOdds,
-                  mainMarket.clobTokenIds[0],
-                  mainMarket.negRisk
-                );
-              }}
+              onClick={() => handleTeamClick(0)}
               disabled={!canClick}
-              className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
-                !canClick
-                  ? "opacity-50 cursor-default bg-white/3"
-                  : "bg-white/3 hover:bg-green-500/10 border border-white/6 hover:border-green-500/30 cursor-pointer hover:glow-green"
+              className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
+                canClick
+                  ? "cursor-pointer hover:bg-green-500/8 active:scale-[0.98]"
+                  : "cursor-default opacity-60"
               }`}
             >
-              <TeamLogo
-                teamName={teamA}
-                logoUrl={teamLogos[teamA] ?? null}
-              />
-              <span className="font-semibold text-sm text-white/90 truncate max-w-full">
-                {teamA}
-              </span>
-              <span className="text-xl font-bold font-data text-green-400">
-                {Math.round(teamAOdds * 100)}
-                <span className="text-sm text-green-400/60">%</span>
+              <TeamLogo teamName={teamA} logoUrl={teamLogos[teamA] ?? null} />
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-semibold text-white/90 truncate">{teamA}</p>
+              </div>
+              <span className="font-data text-lg font-bold text-green-400 tabular-nums">
+                {teamAPct}<span className="text-xs text-green-400/40 ml-px">%</span>
               </span>
             </button>
 
-            {/* VS */}
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-gray-600 font-bold text-xs tracking-widest">VS</span>
-            </div>
+            <span className="text-white/10 text-xs font-bold shrink-0">vs</span>
 
-            {/* Team B */}
+            {/* Team B button */}
             <button
-              onClick={() => {
-                if (!canClick) return;
-                if (!isConnected) { onConnectPrompt(); return; }
-                if (!isSessionReady) return;
-                onOutcomeClick(
-                  event.title,
-                  mainMarket.outcomes[1],
-                  teamBOdds,
-                  mainMarket.clobTokenIds[1],
-                  mainMarket.negRisk
-                );
-              }}
+              onClick={() => handleTeamClick(1)}
               disabled={!canClick}
-              className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
-                !canClick
-                  ? "opacity-50 cursor-default bg-white/3"
-                  : "bg-white/3 hover:bg-red-500/10 border border-white/6 hover:border-red-500/30 cursor-pointer hover:glow-red"
+              className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
+                canClick
+                  ? "cursor-pointer hover:bg-red-500/8 active:scale-[0.98]"
+                  : "cursor-default opacity-60"
               }`}
             >
-              <TeamLogo
-                teamName={teamB}
-                logoUrl={teamLogos[teamB] ?? null}
-              />
-              <span className="font-semibold text-sm text-white/90 truncate max-w-full">
-                {teamB}
-              </span>
-              <span className="text-xl font-bold font-data text-red-400">
-                {Math.round(teamBOdds * 100)}
-                <span className="text-sm text-red-400/60">%</span>
+              <TeamLogo teamName={teamB} logoUrl={teamLogos[teamB] ?? null} />
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-semibold text-white/90 truncate">{teamB}</p>
+              </div>
+              <span className="font-data text-lg font-bold text-red-400 tabular-nums">
+                {teamBPct}<span className="text-xs text-red-400/40 ml-px">%</span>
               </span>
             </button>
           </div>
-        ) : (
-          <div className="text-sm text-gray-300">{event.title}</div>
-        )}
 
-        {/* Inline position display */}
-        {hasPosition && (
-          <div className="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-3 space-y-2">
-            {eventPositions.map(({ position }) => (
-              <div
-                key={position.asset}
-                className="flex items-center justify-between text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-300 font-medium">
-                    {position.outcome}
-                  </span>
-                  <span className="text-gray-500 font-data text-xs">
-                    {formatShares(position.size)} shares @{" "}
-                    {formatCurrency(position.avgPrice, 3)}
+          {/* Odds bar */}
+          <div className="h-1 rounded-full overflow-hidden flex bg-white/5">
+            <div
+              className="bg-green-500/50 transition-all duration-500 rounded-l-full"
+              style={{ width: `${teamAPct}%` }}
+            />
+            <div
+              className="bg-red-500/50 transition-all duration-500 rounded-r-full"
+              style={{ width: `${teamBPct}%` }}
+            />
+          </div>
+
+          {/* Position display */}
+          {hasPosition && (
+            <div className="mt-3 pt-3 border-t border-white/5 space-y-1.5">
+              {eventPositions.map(({ position }) => (
+                <div
+                  key={position.asset}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-amber-300 font-medium">{position.outcome}</span>
+                    <span className="text-white/25 font-data">
+                      {formatShares(position.size)} @ {formatCurrency(position.avgPrice, 3)}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-xs font-bold font-data ${
+                      position.cashPnl >= 0 ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {position.cashPnl >= 0 ? "+" : ""}
+                    {formatCurrency(position.cashPnl)}
                   </span>
                 </div>
-                <span
-                  className={`font-bold font-data ${position.cashPnl >= 0 ? "text-green-400" : "text-red-400"}`}
-                >
-                  {position.cashPnl >= 0 ? "+" : ""}
-                  {formatCurrency(position.cashPnl)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {/* Redeem button for resolved positions */}
-        {redeemablePosition && (
-          <button
-            onClick={() =>
-              onRedeem(redeemablePosition.position, event.id)
-            }
-            disabled={isRedeeming || !canRedeem}
-            className="w-full py-2 font-medium rounded-lg transition-colors bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm"
-          >
-            {isRedeeming
-              ? "Redeeming..."
-              : `Redeem ${formatCurrency(redeemablePosition.position.currentValue)}`}
-          </button>
-        )}
+          {/* Redeem */}
+          {redeemablePosition && (
+            <button
+              onClick={() => onRedeem(redeemablePosition.position, event.id)}
+              disabled={isRedeeming || !canRedeem}
+              className="w-full mt-3 py-2 text-xs font-semibold rounded-lg transition-all bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isRedeeming
+                ? "Redeeming..."
+                : `Redeem ${formatCurrency(redeemablePosition.position.currentValue)}`}
+            </button>
+          )}
 
-        {/* Connect / Session prompt */}
-        {!isConnected && (
-          <p className="text-xs text-center text-gray-500">
-            Connect wallet to place bets
-          </p>
-        )}
-        {isConnected && !isSessionReady && isSessionInitializing && (
-          <p className="text-xs text-center text-purple-400">
-            Setting up trading session...
-          </p>
-        )}
-
-        {/* Extra markets count */}
-        {event.marketCount > 1 && (
-          <div className="text-xs text-gray-500 text-center">
-            +{event.marketCount - 1} more markets (handicap, props, etc.)
-          </div>
-        )}
-      </div>
-    </Card>
+          {/* Prompts */}
+          {!isConnected && (
+            <p className="text-[11px] text-center text-white/20 mt-3">
+              Connect wallet to bet
+            </p>
+          )}
+          {isConnected && !isSessionReady && isSessionInitializing && (
+            <p className="text-[11px] text-center text-purple-400/60 mt-3">
+              Setting up...
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="px-5 pb-4 text-sm text-white/50">{event.title}</div>
+      )}
+    </div>
   );
 }

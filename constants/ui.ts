@@ -1,5 +1,4 @@
-export const CARD_STYLES =
-  "bg-white/3 backdrop-blur-md rounded-xl border border-white/6" as const;
+export const CARD_STYLES = "glass" as const;
 
 export const LOADING_STYLES = "animate-pulse text-gray-400" as const;
 

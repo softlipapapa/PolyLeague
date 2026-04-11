@@ -182,11 +182,15 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold">
-            {statusLabel} Matches{" "}
-            {events.length > 0 ? `(${events.length})` : ""}
-          </h3>
-          <p className="text-xs text-gray-400">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-sm font-semibold text-white/80">
+              {statusLabel}
+            </h3>
+            {events.length > 0 && (
+              <span className="text-xs text-white/20 font-data">{events.length}</span>
+            )}
+          </div>
+          <p className="text-[11px] text-white/15">
             {status === "upcoming" ? "Soonest first" : "Newest first"}
           </p>
         </div>
@@ -217,7 +221,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
 
         {/* Match Cards */}
         {!isLoading && !error && events.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {events.map((event) => (
               <LoLMarketCard
                 key={event.id}

@@ -30,13 +30,10 @@ export default function Header({
   };
 
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-purple-500 to-blue-500 flex items-center justify-center font-bold text-white text-sm">
-          PL
-        </div>
-        <span className="text-xl font-bold tracking-tight bg-linear-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-          PolyLeague
+    <header className="flex items-center justify-between w-full py-2">
+      <div className="flex items-center gap-2">
+        <span className="text-lg font-bold tracking-tight text-white">
+          Poly<span className="text-purple-400">League</span>
         </span>
       </div>
 
@@ -45,10 +42,10 @@ export default function Header({
           <WalletInfo onDisconnect={handleDisconnect} />
         ) : (
           <button
-            className="bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg px-5 py-2.5 cursor-pointer transition-all font-semibold text-sm select-none shadow-lg shadow-purple-600/20"
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 hover:bg-white/10 border border-white/8 hover:border-white/15 text-white/80 hover:text-white transition-all cursor-pointer"
             onClick={() => setShowModal(true)}
           >
-            Connect Wallet
+            Connect
           </button>
         )}
       </div>
@@ -57,6 +54,6 @@ export default function Header({
         isOpen={showModal}
         onClose={() => setShowModal(false)}
       />
-    </div>
+    </header>
   );
 }

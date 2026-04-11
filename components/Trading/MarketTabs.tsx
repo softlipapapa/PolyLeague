@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import Card from "@/components/shared/Card";
 import ActiveOrders from "@/components/Trading/Orders";
 import UserPositions from "@/components/Trading/Positions";
 import LoLMarkets from "@/components/LoL/LoLMarkets";
@@ -19,8 +18,8 @@ interface Tab {
 const tabs: Tab[] = [
   { id: "live", label: "Live" },
   { id: "upcoming", label: "Upcoming" },
-  { id: "positions", label: "My Positions" },
-  { id: "orders", label: "Open Orders" },
+  { id: "positions", label: "Positions" },
+  { id: "orders", label: "Orders" },
 ];
 
 export default function MarketTabs() {
@@ -29,19 +28,22 @@ export default function MarketTabs() {
   return (
     <div className="space-y-5">
       {/* Tab Navigation */}
-      <div className="bg-white/3 backdrop-blur-md rounded-xl border border-white/6 p-1 flex gap-1">
+      <div className="flex gap-1 border-b border-white/6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200",
+              "px-4 py-2.5 text-sm font-medium transition-all relative",
               activeTab === tab.id
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
+                ? "text-white"
+                : "text-white/30 hover:text-white/60"
             )}
           >
             {tab.label}
+            {activeTab === tab.id && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-purple-500 rounded-full" />
+            )}
           </button>
         ))}
       </div>

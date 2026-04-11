@@ -16,7 +16,7 @@ export default function Card({
     <div
       className={cn(
         CARD_STYLES,
-        hover && "hover:bg-white/10 transition-colors",
+        hover && "glass-hover",
         className
       )}
     >

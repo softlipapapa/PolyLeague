@@ -1,15 +1,14 @@
-import { LOADING_STYLES } from "@/constants/ui";
-
-interface LoadingStateProps {
-  message?: string;
-}
-
 export default function LoadingState({
   message = "Loading...",
-}: LoadingStateProps) {
+}: {
+  message?: string;
+}) {
   return (
-    <div className="text-center py-8">
-      <div className={LOADING_STYLES}>{message}</div>
+    <div className="text-center py-12">
+      <div className="inline-flex items-center gap-2 text-sm text-white/25">
+        <div className="w-3.5 h-3.5 rounded-full border-2 border-white/10 border-t-white/30 animate-spin" />
+        {message}
+      </div>
     </div>
   );
 }

@@ -172,40 +172,40 @@ export default function OrderPlacementModal({
   return (
     <Portal>
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4"
         onClick={handleBackdropClick}
       >
         <div
           ref={modalRef}
-          className="bg-gray-900 rounded-lg p-6 max-w-md w-full border border-white/10 shadow-2xl animate-modal-fade-in"
+          className="glass p-6 max-w-sm w-full shadow-2xl shadow-black/50 animate-modal-fade-in"
         >
           {/* Header */}
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-5">
             <div className="flex-1">
-              <h3 className="text-lg font-bold mb-1">{marketTitle}</h3>
-              <p className="text-sm text-blue-400">Buying: {outcome}</p>
+              <h3 className="text-base font-semibold mb-1 text-white">{marketTitle}</h3>
+              <p className="text-xs text-purple-400/80">Buying: {outcome}</p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-white/20 hover:text-white/60 transition-colors text-lg leading-none"
             >
-              ✕
+              &times;
             </button>
           </div>
 
           {/* Success Message */}
           {showSuccess && (
             <div className={cn("mb-4", SUCCESS_STYLES)}>
-              <p className="text-green-300 font-medium text-sm">
-                Order placed successfully!
+              <p className="text-green-400 font-medium text-sm">
+                Order placed!
               </p>
             </div>
           )}
 
           {/* Error Message */}
           {(localError || orderError) && (
-            <div className="mb-4 bg-red-500/20 border border-red-500/40 rounded-lg p-3">
-              <p className="text-red-300 text-sm">
+            <div className="mb-4 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+              <p className="text-red-400 text-xs">
                 {localError || orderError?.message}
               </p>
             </div>
@@ -247,14 +247,14 @@ export default function OrderPlacementModal({
           <button
             onClick={handlePlaceOrder}
             disabled={isSubmitting || sizeNum <= 0 || !clobClient}
-            className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+            className="w-full py-3 bg-green-500/15 hover:bg-green-500/25 border border-green-500/20 hover:border-green-500/30 disabled:bg-white/3 disabled:border-white/6 disabled:text-white/20 disabled:cursor-not-allowed text-green-400 font-semibold text-sm rounded-xl transition-all"
           >
             {isSubmitting ? "Placing Order..." : "Place Order"}
           </button>
 
           {!clobClient && (
-            <p className="text-xs text-yellow-400 mt-2 text-center">
-              Initialize CLOB client first
+            <p className="text-[11px] text-white/20 mt-2 text-center">
+              Waiting for trading session...
             </p>
           )}
         </div>
