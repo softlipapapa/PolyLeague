@@ -437,5 +437,40 @@ Write all code comments, git commit messages, and console logs in English.
 - `components/ConnectModal.tsx` — refined modal
 - `constants/ui.ts` — updated base card styles
 
+### 2026-04-11 — Modern UI Overhaul
+
+**Done:**
+- Complete visual redesign — minimal, modern aesthetic (Linear/Vercel-style)
+- Ambient purple radial gradient mesh background (`body::before`)
+- Glass morphism cards: `backdrop-filter: blur(12px)`, `.glass` / `.glass-hover` CSS classes
+- Match cards rewritten: horizontal team layout (logo | name | odds), odds bar visualization
+- WalletInfo: compact pill with green status dot (replaced verbose card)
+- Header: clean "Poly**League**" text logo, subtle border connect button
+- Tabs: underline indicator style (replaced pill buttons)
+- League filter: minimal text toggles (no borders/bg on inactive)
+- Balance: inline horizontal layout with mono numbers
+- All modals: frosted glass, darker backdrop (`bg-black/70`)
+- Loading/empty states: much quieter, spinner dot, less visual weight
+- Trading session banner: pinging dot animation, inline layout
+- Custom selection color, shimmer animation utility
+- Order modal: glass card, green outline CTA button
+
+**Updated files (15):**
+- `app/globals.css` — ambient bg, glass classes, shimmer, selection
+- `components/Header/index.tsx` — text logo, subtle button
+- `components/Header/WalletInfo.tsx` — compact pill rewrite
+- `components/LoL/LoLMarketCard.tsx` — horizontal layout rewrite
+- `components/LoL/LoLMarkets.tsx` — section header, card spacing
+- `components/LoL/LeagueFilter.tsx` — minimal text toggles
+- `components/Trading/MarketTabs.tsx` — underline tabs
+- `components/Trading/OrderModal/index.tsx` — glass modal
+- `components/PolygonAssets/index.tsx` — inline balance
+- `components/ConnectModal.tsx` — glass modal
+- `components/TradingSession/index.tsx` — ping dot banner
+- `components/shared/Card.tsx` — glass class
+- `components/shared/LoadingState.tsx` — spinner dot
+- `components/shared/EmptyState.tsx` — quieter
+- `constants/ui.ts` — glass base style
+
 **Next steps:**
 - Test full betting flow live (connect → sign → place order on real market)
