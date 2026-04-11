@@ -401,7 +401,15 @@ Write all code comments, git commit messages, and console logs in English.
 - `components/LoL/LoLMarkets.tsx` — passes `isSessionInitializing`, `onConnectPrompt`
 - `components/Header/index.tsx` — listens for `open-connect-modal` event
 
+**Also done (same session):**
+- Fixed "Error loading balance" — now shows $0.00 with subtle message instead of red error
+- Added `retry: 2` and `publicClient` guard to balance query
+- Verified full betting flow compiles: connect → auto-init → clobClient ready → order modal
+
+**Updated files (balance fix):**
+- `hooks/usePolygonBalances.ts` — added retry, publicClient enabled guard
+- `components/PolygonAssets/index.tsx` — graceful error state
+
 **Next steps:**
-- Test full betting flow end-to-end (connect → sign → place order)
-- Debug "Error loading balance" (RPC may need investigation)
+- Test full betting flow live (connect → sign → place order on real market)
 - Esports-themed UI polish (fonts, colors, visual design)
