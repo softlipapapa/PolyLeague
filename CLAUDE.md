@@ -482,4 +482,37 @@ Write all code comments, git commit messages, and console logs in English.
 - `app/api/lol-markets/route.ts` — regex strip on parsed league name
 
 **Next steps:**
-- Test full betting flow live (connect → sign → place order on real market)
+- ~~Phase 2.1: Top Traders / whale tracking~~ ✅
+- ~~Defer session init to first bet~~ ✅
+
+### 2026-04-14 — Phase 2.1: Top Traders & Leaderboard + UX Improvements
+
+**Done:**
+- Per-market top holders: expandable "Top Traders" section on each match card (Data API `/holders`)
+- Global leaderboard page (`/leaderboard`) aggregating top traders across all active LoL markets
+- Lifetime LoL winrate per trader via `/closed-positions` API (wins/losses/PnL)
+- Hover card on leaderboard rows: avatar, wallet, winrate %, W-L record, PnL, active positions, winrate bar
+- Leaderboard nav link in Header
+- Deferred trading session: connect wallet = 0 signatures; init triggers on first bet click
+- Centered `SessionSetupModal` replaces old `TradingSession` banner — shows step-by-step progress with spinner, progress bar, step descriptions, error/retry/success states
+
+**New files:**
+- `app/api/top-holders/route.ts` — Data API proxy for per-market holders
+- `hooks/useTopHolders.ts` — fetch-on-demand hook (only when card expanded)
+- `components/LoL/TopHolders.tsx` — ranked holder list with bar visualization
+- `app/api/leaderboard/route.ts` — aggregates holders + winrates across all LoL markets
+- `hooks/useLeaderboard.ts` — leaderboard data hook
+- `app/leaderboard/page.tsx` — leaderboard page with hover cards
+- `components/SessionSetupModal.tsx` — centered modal for session setup flow
+
+**Updated files:**
+- `components/LoL/LoLMarketCard.tsx` — expandable top traders, `onInitSession` prop
+- `components/LoL/LoLMarkets.tsx` — passes `initializeTradingSession` to cards
+- `components/Header/index.tsx` — added Leaderboard nav link
+- `hooks/useTradingSession.ts` — removed auto-init, session is on-demand only
+- `app/page.tsx` — replaced TradingSession banner with SessionSetupModal
+
+**Next steps:**
+- Test full betting flow live (connect → click team → sign → place order)
+- Phase 2.2: Odds history charts (Recharts price history)
+- Phase 3.1: AI match analysis (Claude API sidebar)
