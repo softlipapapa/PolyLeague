@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import type { LoLEvent } from "@/hooks/useLoLMarkets";
 import type { PolymarketPosition } from "@/hooks/useUserPositions";
+import useTopHolders from "@/hooks/useTopHolders";
+import TopHolders from "@/components/LoL/TopHolders";
 import { formatVolume, formatCurrency, formatShares } from "@/utils/formatting";
 
 interface LoLMarketCardProps {
@@ -24,6 +26,7 @@ interface LoLMarketCardProps {
   ) => void;
   onRedeem: (position: PolymarketPosition, eventId: string) => void;
   onConnectPrompt: () => void;
+  onInitSession: () => void;
 }
 
 function TeamLogo({
@@ -102,9 +105,17 @@ export default function LoLMarketCard({
   onOutcomeClick,
   onRedeem,
   onConnectPrompt,
+  onInitSession,
 }: LoLMarketCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
   const { mainMarket, teamA, teamB, bestOf, league } = event;
   const status = event.status;
+
+  const { data: holdersData, isLoading: holdersLoading } = useTopHolders({
+    conditionId: mainMarket?.conditionId ?? null,
+    enabled: expanded,
+  });
 
   const teamAOdds = mainMarket
     ? parseFloat(mainMarket.outcomePrices[0] || "0")
@@ -141,8 +152,14 @@ export default function LoLMarketCard({
   const handleTeamClick = (teamIndex: 0 | 1) => {
     if (!canClick) return;
     if (!isConnected) { onConnectPrompt(); return; }
-    if (!isSessionReady) return;
     if (!mainMarket) return;
+
+    // If session isn't ready, trigger init (deferred setup on first bet)
+    if (!isSessionReady) {
+      if (!isSessionInitializing) onInitSession();
+      return;
+    }
+
     onOutcomeClick(
       event.title,
       mainMarket.outcomes[teamIndex],
@@ -300,6 +317,36 @@ export default function LoLMarketCard({
             <p className="text-[11px] text-center text-purple-400/60 mt-3">
               Setting up...
             </p>
+          )}
+
+          {/* Top Traders toggle */}
+          <button
+            onClick={() => setExpanded((prev) => !prev)}
+            className="w-full mt-3 pt-3 border-t border-white/5 flex items-center justify-center gap-1.5 cursor-pointer group/expand"
+          >
+            <span className="text-[10px] font-medium text-white/25 group-hover/expand:text-white/40 transition-colors">
+              Top Traders
+            </span>
+            <svg
+              className={`w-3 h-3 text-white/20 group-hover/expand:text-white/35 transition-all duration-200 ${expanded ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Expanded top holders */}
+          {expanded && (
+            <div className="mt-3">
+              <TopHolders
+                data={holdersData || []}
+                outcomes={mainMarket.outcomes}
+                isLoading={holdersLoading}
+              />
+            </div>
           )}
         </div>
       ) : (

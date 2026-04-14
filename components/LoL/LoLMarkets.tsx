@@ -43,6 +43,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     relayClient,
     isGeoblocked,
     isTradingSessionComplete,
+    initializeTradingSession,
     currentStep,
     safeAddress,
   } = useTrading();
@@ -237,6 +238,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
                 onOutcomeClick={handleOutcomeClick}
                 onRedeem={handleRedeem}
                 onConnectPrompt={handleConnectPrompt}
+                onInitSession={initializeTradingSession}
               />
             ))}
 
