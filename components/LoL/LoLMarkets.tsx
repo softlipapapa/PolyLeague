@@ -167,7 +167,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     [relayClient, redeemPosition, queryClient]
   );
 
-  const statusLabel = status === "live" ? "Live" : "Upcoming";
+  const statusLabel = status === "live" ? "Live" : status === "resolved" ? "Results" : "Upcoming";
 
   return (
     <>
@@ -192,7 +192,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
             )}
           </div>
           <p className="text-[11px] text-white/15">
-            {status === "upcoming" ? "Soonest first" : "Newest first"}
+            {status === "upcoming" ? "Soonest first" : status === "resolved" ? "Most recent" : "Newest first"}
           </p>
         </div>
 

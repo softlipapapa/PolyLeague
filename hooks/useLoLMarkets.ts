@@ -42,6 +42,7 @@ export interface LoLEvent {
   marketCount: number;
   gameStartTime: string | null;
   status: "live" | "upcoming" | "resolved";
+  winner: string | null;
 }
 
 interface LoLMarketsPage {
@@ -51,7 +52,7 @@ interface LoLMarketsPage {
   nextOffset: number;
 }
 
-export type MatchStatus = "live" | "upcoming";
+export type MatchStatus = "live" | "upcoming" | "resolved";
 
 interface UseLoLMarketsOptions {
   league?: string | null;

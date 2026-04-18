@@ -163,8 +163,13 @@ export default function LoLMarketCard({
     );
   };
 
+  const isResolved = status === "resolved";
+  const winner = event.winner;
+  const teamAWon = winner === teamA;
+  const teamBWon = winner === teamB;
+
   return (
-    <div className="glass glass-hover group">
+    <div className={`glass group ${isResolved ? "opacity-75" : "glass-hover"}`}>
       {/* Meta row */}
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <div className="flex items-center gap-2">
@@ -181,6 +186,11 @@ export default function LoLMarketCard({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
               </span>
               <span className="text-[10px] font-semibold uppercase tracking-widest text-green-400">Live</span>
+            </span>
+          ) : isResolved ? (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex rounded-full h-2 w-2 bg-white/20" />
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-white/30">Final</span>
             </span>
           ) : (
             <span className="text-[10px] font-medium text-white/30">
@@ -208,83 +218,134 @@ export default function LoLMarketCard({
         <div className="px-5 pb-4">
           {/* Teams row */}
           <div className="flex items-center gap-3 mb-3">
-            {/* Team A button */}
+            {/* Team A */}
             <button
               onClick={() => handleTeamClick(0)}
-              disabled={!canClick}
+              disabled={!canClick || isResolved}
               className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
-                canClick
-                  ? "cursor-pointer hover:bg-green-500/8 active:scale-[0.98]"
-                  : "cursor-default opacity-60"
+                isResolved
+                  ? teamAWon
+                    ? "bg-green-500/8 cursor-default"
+                    : "cursor-default opacity-40"
+                  : canClick
+                    ? "cursor-pointer hover:bg-green-500/8 active:scale-[0.98]"
+                    : "cursor-default opacity-60"
               }`}
             >
               <TeamLogo teamName={teamA} logoUrl={teamLogos[teamA] ?? null} />
               <div className="flex-1 text-left min-w-0">
-                <p className="text-sm font-semibold text-white/90 truncate">{teamA}</p>
+                <p className={`text-sm font-semibold truncate ${
+                  isResolved && !teamAWon ? "text-white/30" : "text-white/90"
+                }`}>{teamA}</p>
               </div>
-              <span className="font-data text-lg font-bold text-green-400 tabular-nums">
-                {teamAPct}<span className="text-xs text-green-400/40 ml-px">%</span>
-              </span>
+              {isResolved ? (
+                teamAWon ? (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-[10px] font-semibold uppercase text-green-400">Win</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-white/15 uppercase">Loss</span>
+                )
+              ) : (
+                <span className="font-data text-lg font-bold text-green-400 tabular-nums">
+                  {teamAPct}<span className="text-xs text-green-400/40 ml-px">%</span>
+                </span>
+              )}
             </button>
 
             <span className="text-white/10 text-xs font-bold shrink-0">vs</span>
 
-            {/* Team B button */}
+            {/* Team B */}
             <button
               onClick={() => handleTeamClick(1)}
-              disabled={!canClick}
+              disabled={!canClick || isResolved}
               className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
-                canClick
-                  ? "cursor-pointer hover:bg-red-500/8 active:scale-[0.98]"
-                  : "cursor-default opacity-60"
+                isResolved
+                  ? teamBWon
+                    ? "bg-green-500/8 cursor-default"
+                    : "cursor-default opacity-40"
+                  : canClick
+                    ? "cursor-pointer hover:bg-red-500/8 active:scale-[0.98]"
+                    : "cursor-default opacity-60"
               }`}
             >
               <TeamLogo teamName={teamB} logoUrl={teamLogos[teamB] ?? null} />
               <div className="flex-1 text-left min-w-0">
-                <p className="text-sm font-semibold text-white/90 truncate">{teamB}</p>
+                <p className={`text-sm font-semibold truncate ${
+                  isResolved && !teamBWon ? "text-white/30" : "text-white/90"
+                }`}>{teamB}</p>
               </div>
-              <span className="font-data text-lg font-bold text-red-400 tabular-nums">
-                {teamBPct}<span className="text-xs text-red-400/40 ml-px">%</span>
-              </span>
+              {isResolved ? (
+                teamBWon ? (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-[10px] font-semibold uppercase text-green-400">Win</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-white/15 uppercase">Loss</span>
+                )
+              ) : (
+                <span className="font-data text-lg font-bold text-red-400 tabular-nums">
+                  {teamBPct}<span className="text-xs text-red-400/40 ml-px">%</span>
+                </span>
+              )}
             </button>
           </div>
 
           {/* Odds bar */}
-          <div className="h-1 rounded-full overflow-hidden flex bg-white/5">
-            <div
-              className="bg-green-500/50 transition-all duration-500 rounded-l-full"
-              style={{ width: `${teamAPct}%` }}
-            />
-            <div
-              className="bg-red-500/50 transition-all duration-500 rounded-r-full"
-              style={{ width: `${teamBPct}%` }}
-            />
-          </div>
+          {!isResolved && (
+            <div className="h-1 rounded-full overflow-hidden flex bg-white/5">
+              <div
+                className="bg-green-500/50 transition-all duration-500 rounded-l-full"
+                style={{ width: `${teamAPct}%` }}
+              />
+              <div
+                className="bg-red-500/50 transition-all duration-500 rounded-r-full"
+                style={{ width: `${teamBPct}%` }}
+              />
+            </div>
+          )}
 
           {/* Position display */}
           {hasPosition && (
             <div className="mt-3 pt-3 border-t border-white/5 space-y-1.5">
-              {eventPositions.map(({ position }) => (
-                <div
-                  key={position.asset}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-amber-300 font-medium">{position.outcome}</span>
-                    <span className="text-white/25 font-data">
-                      {formatShares(position.size)} @ {formatCurrency(position.avgPrice, 3)}
+              {eventPositions.map(({ position }) => {
+                const positionWon = isResolved && position.outcome === winner;
+                const positionLost = isResolved && winner !== null && position.outcome !== winner;
+                return (
+                  <div
+                    key={position.asset}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2 text-xs">
+                      {isResolved && (
+                        <span className={`text-[10px] font-bold uppercase ${
+                          positionWon ? "text-green-400" : positionLost ? "text-red-400" : "text-white/20"
+                        }`}>
+                          {positionWon ? "Won" : positionLost ? "Lost" : "—"}
+                        </span>
+                      )}
+                      <span className="text-amber-300 font-medium">{position.outcome}</span>
+                      <span className="text-white/25 font-data">
+                        {formatShares(position.size)} @ {formatCurrency(position.avgPrice, 3)}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-xs font-bold font-data ${
+                        position.cashPnl >= 0 ? "text-green-400" : "text-red-400"
+                      }`}
+                    >
+                      {position.cashPnl >= 0 ? "+" : ""}
+                      {formatCurrency(position.cashPnl)}
                     </span>
                   </div>
-                  <span
-                    className={`text-xs font-bold font-data ${
-                      position.cashPnl >= 0 ? "text-green-400" : "text-red-400"
-                    }`}
-                  >
-                    {position.cashPnl >= 0 ? "+" : ""}
-                    {formatCurrency(position.cashPnl)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

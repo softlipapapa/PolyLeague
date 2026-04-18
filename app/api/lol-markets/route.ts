@@ -65,6 +65,15 @@ function parseEvent(event: any) {
     status = "upcoming";
   }
 
+  // Determine winner for resolved matches
+  let winner: string | null = null;
+  if (status === "resolved" && mainMarket) {
+    const winnerIdx = mainMarket.outcomePrices.indexOf("1");
+    if (winnerIdx >= 0 && mainMarket.outcomes[winnerIdx]) {
+      winner = mainMarket.outcomes[winnerIdx];
+    }
+  }
+
   return {
     id: event.id,
     title: event.title,
@@ -86,6 +95,7 @@ function parseEvent(event: any) {
     marketCount: markets.length,
     gameStartTime,
     status,
+    winner,
   };
 }
 
@@ -99,7 +109,11 @@ export async function GET(request: NextRequest) {
   try {
     // Fetch more than needed to account for filtering
     const fetchLimit = Math.max(limit * 3, 100);
-    const url = `${GAMMA_API_URL}/events?tag_id=${LOL_TAG_ID}&limit=${fetchLimit}&offset=${offset}&order=startDate&ascending=false`;
+    let url = `${GAMMA_API_URL}/events?tag_id=${LOL_TAG_ID}&limit=${fetchLimit}&offset=${offset}&order=startDate&ascending=false`;
+    // Include closed events when requesting resolved matches
+    if (statusFilter === "resolved") {
+      url += "&closed=true";
+    }
 
     const response = await fetch(url, {
       headers: { "Content-Type": "application/json" },
@@ -121,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     // Parse all events
     let lolEvents = events
-      .filter((event: any) => !event.closed || statusFilter === "all")
+      .filter((event: any) => !event.closed || statusFilter === "all" || statusFilter === "resolved")
       .map(parseEvent);
 
     // Filter by status
