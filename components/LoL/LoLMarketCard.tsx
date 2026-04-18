@@ -5,6 +5,7 @@ import type { LoLEvent } from "@/hooks/useLoLMarkets";
 import type { PolymarketPosition } from "@/hooks/useUserPositions";
 import useTopHolders from "@/hooks/useTopHolders";
 import TopHolders from "@/components/LoL/TopHolders";
+import OddsChart from "@/components/LoL/OddsChart";
 import { formatVolume, formatCurrency, formatShares } from "@/utils/formatting";
 
 interface LoLMarketCardProps {
@@ -312,13 +313,13 @@ export default function LoLMarketCard({
             </p>
           )}
 
-          {/* Top Traders toggle */}
+          {/* Chart & Traders toggle */}
           <button
             onClick={() => setExpanded((prev) => !prev)}
             className="w-full mt-3 pt-3 border-t border-white/5 flex items-center justify-center gap-1.5 cursor-pointer group/expand"
           >
             <span className="text-[10px] font-medium text-white/25 group-hover/expand:text-white/40 transition-colors">
-              Top Traders
+              {expanded ? "Hide Details" : "Chart & Top Traders"}
             </span>
             <svg
               className={`w-3 h-3 text-white/20 group-hover/expand:text-white/35 transition-all duration-200 ${expanded ? "rotate-180" : ""}`}
@@ -331,9 +332,14 @@ export default function LoLMarketCard({
             </svg>
           </button>
 
-          {/* Expanded top holders */}
+          {/* Expanded: chart + top holders */}
           {expanded && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-4">
+              <OddsChart
+                tokenId={mainMarket.clobTokenIds[0]}
+                teamName={teamA || mainMarket.outcomes[0]}
+                enabled={expanded}
+              />
               <TopHolders
                 data={holdersData || []}
                 outcomes={mainMarket.outcomes}
