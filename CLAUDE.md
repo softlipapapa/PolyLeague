@@ -556,6 +556,28 @@ Write all code comments, git commit messages, and console logs in English.
 - `package.json` — added `recharts`
 
 **Next steps:**
+- ~~Resolved match states~~ ✅
+
+### 2026-04-17 — Resolved Match States & Results Tab
+
+**Done:**
+- Added "Results" tab alongside Live/Upcoming showing finished matches
+- Winner highlighted with green checkmark + "Win" badge, loser dimmed with "Loss" label
+- "Final" badge with gray dot replaces Live/time display on resolved cards
+- Odds bar hidden for resolved matches (winner/loser is the only info needed)
+- User positions on resolved matches show "Won" / "Lost" label
+- API route supports `status=resolved` — fetches `closed=true` events from Gamma
+- Winner determined from `outcomePrices` (`"1"` = winner, `"0"` = loser)
+
+**Updated files:**
+- `app/api/lol-markets/route.ts` — resolved filter, `closed=true` param, `winner` field
+- `hooks/useLoLMarkets.ts` — added `"resolved"` to `MatchStatus`, `winner` to `LoLEvent`
+- `components/Trading/MarketTabs.tsx` — added Results tab
+- `components/LoL/LoLMarketCard.tsx` — resolved styling, winner/loser display, position result
+- `components/LoL/LoLMarkets.tsx` — resolved label and sort description
+
+**Next steps:**
 - Test full betting flow live (connect → click team → sign → place order)
 - Phase 3.1: AI match analysis (Claude API sidebar)
+- Phase 3.2: Cross-platform odds comparison (Kalshi)
 - Phase 3.2: Cross-platform odds comparison (Kalshi)
