@@ -16,6 +16,7 @@ export type SessionStep =
   | "idle"
   | "checking"
   | "deploying"
+  | "safe-complete"
   | "credentials"
   | "approvals"
   | "complete";

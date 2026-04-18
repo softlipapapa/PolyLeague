@@ -27,7 +27,7 @@ export default function useUserApiCredentials() {
       );
 
       try {
-        // Try to derive existing credentials first
+        // Try to derive existing credentials first (expected to fail for new users)
         const derivedCreds = await tempClient.deriveApiKey().catch(() => null);
 
         if (
@@ -35,14 +35,14 @@ export default function useUserApiCredentials() {
           derivedCreds?.secret &&
           derivedCreds?.passphrase
         ) {
-          console.log("Successfully derived existing User API Credentials");
+          console.log("Derived existing API credentials");
           return derivedCreds;
         }
 
-        // Derive failed or returned invalid data - create new credentials
-        console.log("Creating new User API Credentials...");
+        // Derive failed (normal for first-time users) — create new credentials
+        console.log("Creating new API credentials (first-time setup)...");
         const newCreds = await tempClient.createApiKey();
-        console.log("Successfully created new User API Credentials");
+        console.log("API credentials created successfully");
         return newCreds;
       } catch (err) {
         console.error("Failed to get credentials:", err);

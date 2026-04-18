@@ -23,7 +23,8 @@ export default function HighVolumeMarkets() {
     negRisk: boolean;
   } | null>(null);
 
-  const { clobClient, isGeoblocked } = useTrading();
+  const { clobClient, isGeoblocked, initTradingCredentials, currentStep } = useTrading();
+  const isSessionInitializing = currentStep !== "idle" && currentStep !== "complete";
 
   const { data: markets, isLoading, error } = useMarkets({
     limit: 10,
@@ -112,6 +113,8 @@ export default function HighVolumeMarkets() {
           tokenId={selectedOutcome.tokenId}
           negRisk={selectedOutcome.negRisk}
           clobClient={clobClient}
+          onInitTradingCredentials={initTradingCredentials}
+          isSessionInitializing={isSessionInitializing}
         />
       )}
     </>

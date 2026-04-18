@@ -12,35 +12,39 @@ export default function Home() {
   const {
     currentStep,
     sessionError,
-    isTradingSessionComplete,
     initializeTradingSession,
+    initSafeDeployment,
     endTradingSession,
     isGeoblocked,
     isGeoblockLoading,
     geoblockStatus,
   } = useTrading();
 
-  // Show modal when session init is actively running or has errored
+  // Show modal whenever a session step is actively running
   const [showSetupModal, setShowSetupModal] = useState(false);
 
   useEffect(() => {
-    if (currentStep !== "idle" && currentStep !== "complete" && !isTradingSessionComplete) {
+    if (currentStep !== "idle") {
       setShowSetupModal(true);
     }
-    if (currentStep === "complete") {
-      // Keep modal open briefly to show success state
+    // Auto-dismiss on success states
+    if (currentStep === "complete" || currentStep === "safe-complete") {
       const timer = setTimeout(() => setShowSetupModal(false), 1500);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, isTradingSessionComplete]);
+  }, [currentStep]);
 
-  // Also show modal on error
   useEffect(() => {
     if (sessionError) setShowSetupModal(true);
   }, [sessionError]);
 
   const handleRetry = () => {
-    initializeTradingSession();
+    // Retry the appropriate phase based on what failed
+    if (currentStep === "idle") {
+      initSafeDeployment();
+    } else {
+      initializeTradingSession();
+    }
   };
 
   const handleCloseSetupModal = () => {

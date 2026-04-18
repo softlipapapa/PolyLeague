@@ -26,7 +26,6 @@ interface LoLMarketCardProps {
   ) => void;
   onRedeem: (position: PolymarketPosition, eventId: string) => void;
   onConnectPrompt: () => void;
-  onInitSession: () => void;
 }
 
 function TeamLogo({
@@ -105,7 +104,6 @@ export default function LoLMarketCard({
   onOutcomeClick,
   onRedeem,
   onConnectPrompt,
-  onInitSession,
 }: LoLMarketCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -154,12 +152,7 @@ export default function LoLMarketCard({
     if (!isConnected) { onConnectPrompt(); return; }
     if (!mainMarket) return;
 
-    // If session isn't ready, trigger init (deferred setup on first bet)
-    if (!isSessionReady) {
-      if (!isSessionInitializing) onInitSession();
-      return;
-    }
-
+    // Open order modal directly — session init happens at "Place Order"
     onOutcomeClick(
       event.title,
       mainMarket.outcomes[teamIndex],

@@ -43,7 +43,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     relayClient,
     isGeoblocked,
     isTradingSessionComplete,
-    initializeTradingSession,
+    initTradingCredentials,
     currentStep,
     safeAddress,
   } = useTrading();
@@ -238,7 +238,6 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
                 onOutcomeClick={handleOutcomeClick}
                 onRedeem={handleRedeem}
                 onConnectPrompt={handleConnectPrompt}
-                onInitSession={initializeTradingSession}
               />
             ))}
 
@@ -263,6 +262,8 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
           tokenId={selectedOutcome.tokenId}
           negRisk={selectedOutcome.negRisk}
           clobClient={clobClient}
+          onInitTradingCredentials={initTradingCredentials}
+          isSessionInitializing={isSessionInitializing}
         />
       )}
     </>

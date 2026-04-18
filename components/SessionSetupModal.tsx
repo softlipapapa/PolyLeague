@@ -11,39 +11,50 @@ interface SessionSetupModalProps {
 
 const STEP_CONFIG: Record<
   string,
-  { title: string; description: string; stepNumber: number }
+  { title: string; description: string; stepNumber: number; totalSteps: number }
 > = {
+  // Phase 1: Safe deployment (on wallet connect)
   checking: {
     title: "Checking account",
-    description: "Verifying your trading account status...",
+    description: "Verifying your wallet status...",
     stepNumber: 1,
+    totalSteps: 2,
   },
   deploying: {
     title: "Deploying Smart Wallet",
     description:
       "A signature is required to deploy your Safe wallet. Please approve the request in your wallet.",
     stepNumber: 2,
+    totalSteps: 2,
   },
+  "safe-complete": {
+    title: "Wallet ready!",
+    description: "Your Smart Wallet has been set up.",
+    stepNumber: 2,
+    totalSteps: 2,
+  },
+  // Phase 2: Trading credentials (on first order)
   credentials: {
     title: "Creating Trading Credentials",
     description:
       "A signature is required to generate your API credentials. Please approve the request in your wallet.",
-    stepNumber: 3,
+    stepNumber: 1,
+    totalSteps: 2,
   },
   approvals: {
     title: "Approving Tokens",
     description:
       "Setting up token approvals so you can trade. This may require a signature.",
-    stepNumber: 4,
+    stepNumber: 2,
+    totalSteps: 2,
   },
   complete: {
     title: "You're all set!",
     description: "Trading session is ready. You can now place bets.",
-    stepNumber: 5,
+    stepNumber: 2,
+    totalSteps: 2,
   },
 };
-
-const TOTAL_STEPS = 4;
 
 export default function SessionSetupModal({
   currentStep,
@@ -53,12 +64,12 @@ export default function SessionSetupModal({
 }: SessionSetupModalProps) {
   const config = STEP_CONFIG[currentStep];
   const isActive = !!config || !!error;
-  const isComplete = currentStep === "complete";
+  const isComplete = currentStep === "complete" || currentStep === "safe-complete";
 
   if (!isActive) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-md">
       <div className="glass p-6 w-full max-w-sm shadow-2xl shadow-black/50">
         {/* Error state */}
         {error ? (
@@ -180,12 +191,12 @@ export default function SessionSetupModal({
                 <div
                   className="h-full bg-purple-500/50 rounded-full transition-all duration-500 ease-out"
                   style={{
-                    width: `${(config!.stepNumber / TOTAL_STEPS) * 100}%`,
+                    width: `${(config!.stepNumber / config!.totalSteps) * 100}%`,
                   }}
                 />
               </div>
               <p className="text-[10px] text-white/15 mt-1.5 text-right font-data">
-                Step {config!.stepNumber} of {TOTAL_STEPS}
+                Step {config!.stepNumber} of {config!.totalSteps}
               </p>
             </div>
 

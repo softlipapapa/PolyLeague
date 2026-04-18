@@ -40,6 +40,8 @@ type OrderPlacementModalProps = {
   tokenId: string;
   negRisk?: boolean;
   clobClient: ClobClient | null;
+  onInitTradingCredentials: () => Promise<void>;
+  isSessionInitializing: boolean;
 };
 
 export default function OrderPlacementModal({
@@ -51,6 +53,8 @@ export default function OrderPlacementModal({
   tokenId,
   negRisk = false,
   clobClient,
+  onInitTradingCredentials,
+  isSessionInitializing,
 }: OrderPlacementModalProps) {
   const [size, setSize] = useState<string>("");
   const [orderType, setOrderType] = useState<"market" | "limit">("market");
@@ -147,6 +151,18 @@ export default function OrderPlacementModal({
         setLocalError(`Price must be a multiple of tick size ($${tickSize})`);
         return;
       }
+    }
+
+    // If trading credentials aren't ready, init phase 2 now (signatures happen here)
+    if (!clobClient) {
+      try {
+        await onInitTradingCredentials();
+      } catch (err) {
+        console.error("Trading credentials init failed:", err);
+        return;
+      }
+      // clobClient will be set after credentials complete — user needs to click again
+      return;
     }
 
     try {
@@ -246,17 +262,17 @@ export default function OrderPlacementModal({
           {/* Place Order Button */}
           <button
             onClick={handlePlaceOrder}
-            disabled={isSubmitting || sizeNum <= 0 || !clobClient}
-            className="w-full py-3 bg-green-500/15 hover:bg-green-500/25 border border-green-500/20 hover:border-green-500/30 disabled:bg-white/3 disabled:border-white/6 disabled:text-white/20 disabled:cursor-not-allowed text-green-400 font-semibold text-sm rounded-xl transition-all"
+            disabled={isSubmitting || isSessionInitializing || sizeNum <= 0}
+            className="w-full py-3 bg-green-500/15 hover:bg-green-500/25 border border-green-500/20 hover:border-green-500/30 disabled:bg-white/3 disabled:border-white/6 disabled:text-white/20 disabled:cursor-not-allowed text-green-400 font-semibold text-sm rounded-xl transition-all cursor-pointer"
           >
-            {isSubmitting ? "Placing Order..." : "Place Order"}
+            {isSubmitting
+              ? "Placing Order..."
+              : isSessionInitializing
+                ? "Setting up..."
+                : !clobClient
+                  ? "Place Order"
+                  : "Place Order"}
           </button>
-
-          {!clobClient && (
-            <p className="text-[11px] text-white/20 mt-2 text-center">
-              Waiting for trading session...
-            </p>
-          )}
         </div>
       </div>
     </Portal>

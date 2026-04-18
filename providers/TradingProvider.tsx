@@ -15,7 +15,10 @@ interface TradingContextType {
   currentStep: SessionStep;
   sessionError: Error | null;
   isTradingSessionComplete: boolean | undefined;
+  isSafeDeployed: boolean;
   initializeTradingSession: () => Promise<void>;
+  initSafeDeployment: () => Promise<void>;
+  initTradingCredentials: () => Promise<void>;
   endTradingSession: () => void;
   clobClient: ClobClient | null;
   relayClient: RelayClient | null;
@@ -49,7 +52,10 @@ export default function TradingProvider({ children }: { children: ReactNode }) {
     currentStep,
     sessionError,
     isTradingSessionComplete,
+    isSafeDeployed,
     initializeTradingSession: initSession,
+    initSafeDeployment: initSafe,
+    initTradingCredentials: initCreds,
     endTradingSession,
     relayClient,
   } = useTradingSession();
@@ -59,14 +65,31 @@ export default function TradingProvider({ children }: { children: ReactNode }) {
     isTradingSessionComplete
   );
 
-  const initializeTradingSession = useCallback(async () => {
-    if (isGeoblocked) {
-      throw new Error(
-        "Trading is not available in your region. Polymarket is geoblocked in your location."
-      );
-    }
-    return initSession();
-  }, [isGeoblocked, initSession]);
+  const geoGuard = useCallback(
+    <T extends (...args: any[]) => Promise<void>>(fn: T) =>
+      async (...args: Parameters<T>) => {
+        if (isGeoblocked) {
+          throw new Error(
+            "Trading is not available in your region. Polymarket is geoblocked in your location."
+          );
+        }
+        return fn(...args);
+      },
+    [isGeoblocked]
+  );
+
+  const initializeTradingSession = useCallback(
+    () => geoGuard(initSession)(),
+    [geoGuard, initSession]
+  );
+  const initSafeDeployment = useCallback(
+    () => geoGuard(initSafe)(),
+    [geoGuard, initSafe]
+  );
+  const initTradingCredentials = useCallback(
+    () => geoGuard(initCreds)(),
+    [geoGuard, initCreds]
+  );
 
   return (
     <TradingContext.Provider
@@ -75,7 +98,10 @@ export default function TradingProvider({ children }: { children: ReactNode }) {
         currentStep,
         sessionError,
         isTradingSessionComplete,
+        isSafeDeployed,
         initializeTradingSession,
+        initSafeDeployment,
+        initTradingCredentials,
         endTradingSession,
         clobClient,
         relayClient,
