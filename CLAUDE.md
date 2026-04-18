@@ -513,6 +513,49 @@ Write all code comments, git commit messages, and console logs in English.
 - `app/page.tsx` — replaced TradingSession banner with SessionSetupModal
 
 **Next steps:**
+- ~~Phase 2.2: Odds history charts~~ ✅
+
+### 2026-04-14 — Two-Phase Session Init
+
+**Done:**
+- Split trading session into two phases:
+  - Phase 1 (on wallet connect): relay client init + Safe deployment (1 signature)
+  - Phase 2 (on Place Order): API credentials + token approvals (1-2 signatures)
+- SessionSetupModal z-index raised to z-60 (above OrderModal z-50)
+- Order modal opens freely without session, triggers phase 2 on submit
+- Cleaner derive error handling for first-time users
+
+**Updated files:**
+- `hooks/useTradingSession.ts` — split into `initSafeDeployment` + `initTradingCredentials`
+- `utils/session.ts` — added `safe-complete` step
+- `providers/TradingProvider.tsx` — expose both init functions
+- `components/SessionSetupModal.tsx` — per-phase step counts, z-60
+- `components/Trading/OrderModal/index.tsx` — triggers `initTradingCredentials` on Place Order
+- `components/LoL/LoLMarketCard.tsx` — removed session gate from team click
+- `components/LoL/LoLMarkets.tsx` — passes `initTradingCredentials` to OrderModal
+- `components/Trading/Markets/index.tsx` — same
+- `app/page.tsx` — updated modal logic for two phases
+
+### 2026-04-17 — Phase 2.2: Odds History Charts
+
+**Done:**
+- CLOB API `/prices-history` integration via `/api/price-history` proxy
+- `OddsChart` component: Recharts area chart with green/red color based on price direction
+- 6 time intervals: 1H, 6H, 1D, 1W, 1M, All — with appropriate fidelity per interval
+- Custom tooltip showing date/time and percentage
+- Chart appears in expandable card section alongside top holders
+- Toggle label: "Chart & Top Traders" / "Hide Details"
+
+**New files:**
+- `app/api/price-history/route.ts` — CLOB price history proxy
+- `hooks/usePriceHistory.ts` — React Query hook with interval support
+- `components/LoL/OddsChart.tsx` — area chart with interval selector
+
+**Updated files:**
+- `components/LoL/LoLMarketCard.tsx` — added OddsChart to expanded section
+- `package.json` — added `recharts`
+
+**Next steps:**
 - Test full betting flow live (connect → click team → sign → place order)
-- Phase 2.2: Odds history charts (Recharts price history)
 - Phase 3.1: AI match analysis (Claude API sidebar)
+- Phase 3.2: Cross-platform odds comparison (Kalshi)
