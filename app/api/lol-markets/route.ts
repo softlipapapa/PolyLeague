@@ -56,9 +56,15 @@ function parseEvent(event: any) {
   const now = new Date();
   const gameStart = gameStartTime ? new Date(gameStartTime) : null;
 
-  let status: "live" | "upcoming" | "resolved";
+  // Check if main market is still accepting orders
+  const isAcceptingOrders = mainMarket?.acceptingOrders !== false;
+
+  let status: "live" | "upcoming" | "resolved" | "settling";
   if (event.closed) {
     status = "resolved";
+  } else if (!isAcceptingOrders && gameStart && now >= gameStart) {
+    // Match started, market no longer accepting orders but not yet closed = settling
+    status = "settling";
   } else if (gameStart && now >= gameStart) {
     status = "live";
   } else {
@@ -140,7 +146,12 @@ export async function GET(request: NextRequest) {
 
     // Filter by status
     if (statusFilter && statusFilter !== "all") {
-      lolEvents = lolEvents.filter((e: any) => e.status === statusFilter);
+      if (statusFilter === "live") {
+        // Include settling matches in the live tab
+        lolEvents = lolEvents.filter((e: any) => e.status === "live" || e.status === "settling");
+      } else {
+        lolEvents = lolEvents.filter((e: any) => e.status === statusFilter);
+      }
     }
 
     // Sort upcoming by game start time ascending (soonest first)

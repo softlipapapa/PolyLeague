@@ -187,6 +187,11 @@ export default function LoLMarketCard({
               </span>
               <span className="text-[10px] font-semibold uppercase tracking-widest text-green-400">Live</span>
             </span>
+          ) : status === "settling" ? (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex rounded-full h-2 w-2 bg-amber-400/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-400/60">Settling</span>
+            </span>
           ) : isResolved ? (
             <span className="flex items-center gap-1.5">
               <span className="inline-flex rounded-full h-2 w-2 bg-white/20" />

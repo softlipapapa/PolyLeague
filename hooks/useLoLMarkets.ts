@@ -41,7 +41,7 @@ export interface LoLEvent {
   markets: LoLMarket[];
   marketCount: number;
   gameStartTime: string | null;
-  status: "live" | "upcoming" | "resolved";
+  status: "live" | "upcoming" | "resolved" | "settling";
   winner: string | null;
 }
 

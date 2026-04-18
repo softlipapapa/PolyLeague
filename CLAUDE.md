@@ -576,8 +576,21 @@ Write all code comments, git commit messages, and console logs in English.
 - `components/LoL/LoLMarketCard.tsx` — resolved styling, winner/loser display, position result
 - `components/LoL/LoLMarkets.tsx` — resolved label and sort description
 
+### 2026-04-17 — Settling State for In-Progress Matches
+
+**Done:**
+- Added "Settling" status for matches that ended but market hasn't resolved yet
+- Detection: `acceptingOrders === false && !closed && gameStarted` → settling
+- Amber dot + "Settling" badge on match cards (between Live green and Final gray)
+- Settling matches appear in the Live tab (filter includes both `live` and `settling`)
+- Status type updated: `"live" | "upcoming" | "resolved" | "settling"`
+
+**Updated files:**
+- `app/api/lol-markets/route.ts` — settling status detection, live filter includes settling
+- `hooks/useLoLMarkets.ts` — added `"settling"` to status type
+- `components/LoL/LoLMarketCard.tsx` — amber settling badge
+
 **Next steps:**
 - Test full betting flow live (connect → click team → sign → place order)
 - Phase 3.1: AI match analysis (Claude API sidebar)
-- Phase 3.2: Cross-platform odds comparison (Kalshi)
 - Phase 3.2: Cross-platform odds comparison (Kalshi)
