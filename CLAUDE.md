@@ -618,7 +618,21 @@ Write all code comments, git commit messages, and console logs in English.
 **Env required:**
 - `PANDASCORE_API_KEY` in `.env.local`
 
+### 2026-04-21 — H2H Bug Fixes & Performance
+
+**Done:**
+- Fixed H2H showing "0:0" scores — PandaScore `filter[opponent_id]` is OR, not AND. Added server-side filter to keep only matches where both teams participated.
+- Fixed "No previous matches found" — reduced from OR-filtering both teams (per_page=100) to single-team query (per_page=30) + client filter for opponent. Much faster.
+- Made H2H dates more visible (white/20 → white/50)
+- Added H2H prefetch on card render — data loads in background before user expands, near-instant when they click
+- Investigated Kalshi for Phase 3.2 — no LoL/esports markets exist on Kalshi. Skipping cross-platform odds comparison.
+
+**Updated files:**
+- `app/api/head-to-head/route.ts` — single-team query, both-team filter, removed unused constant
+- `components/LoL/HeadToHead.tsx` — brighter date text
+- `components/LoL/LoLMarketCard.tsx` — H2H prefetch on render
+- `hooks/useHeadToHead.ts` — extracted fetchH2H, added usePrefetchHeadToHead hook
+
 **Next steps:**
+- Phase 3.3: Team info, rosters, recent form (PandaScore + optional Riot API)
 - Test full betting flow live (connect → click team → sign → place order)
-- Phase 3.2: Cross-platform odds comparison (Kalshi)
-- Phase 3.3: Player/Team info (Riot API / Oracle's Elixir)
