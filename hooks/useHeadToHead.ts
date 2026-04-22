@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 interface TeamInfo {
   name: string;
@@ -48,6 +49,30 @@ export interface H2HData {
   error?: string;
 }
 
+async function fetchH2H(teamA: string, teamB: string): Promise<H2HData> {
+  const res = await fetch(
+    `/api/head-to-head?teamA=${encodeURIComponent(teamA)}&teamB=${encodeURIComponent(teamB)}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch head-to-head data");
+  return res.json();
+}
+
+// Prefetch H2H data in the background when a card renders
+export function usePrefetchHeadToHead(
+  teamA: string | null,
+  teamB: string | null
+) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!teamA || !teamB) return;
+    queryClient.prefetchQuery({
+      queryKey: ["head-to-head", teamA, teamB],
+      queryFn: () => fetchH2H(teamA, teamB),
+      staleTime: 6 * 60 * 60 * 1000,
+    });
+  }, [teamA, teamB, queryClient]);
+}
+
 export default function useHeadToHead(
   teamA: string | null,
   teamB: string | null,
@@ -55,15 +80,9 @@ export default function useHeadToHead(
 ) {
   return useQuery<H2HData>({
     queryKey: ["head-to-head", teamA, teamB],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/head-to-head?teamA=${encodeURIComponent(teamA!)}&teamB=${encodeURIComponent(teamB!)}`
-      );
-      if (!res.ok) throw new Error("Failed to fetch head-to-head data");
-      return res.json();
-    },
+    queryFn: () => fetchH2H(teamA!, teamB!),
     enabled: enabled && !!teamA && !!teamB,
-    staleTime: 6 * 60 * 60 * 1000, // 6 hours — matches with same data
+    staleTime: 6 * 60 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
 }

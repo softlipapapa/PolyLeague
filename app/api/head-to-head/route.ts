@@ -7,7 +7,7 @@ const h2hCache = new Map<string, { data: any; timestamp: number }>();
 const teamIdCache = new Map<string, number | null>();
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const TEAM_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours for team ID lookups
+// Team ID cache doesn't expire (team IDs are stable)
 
 async function pandaFetch(path: string, token: string) {
   const res = await fetch(`${PANDASCORE_BASE}${path}`, {
@@ -101,14 +101,23 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fetch past matches between the two teams
+    // Fetch one team's recent matches, then filter for H2H
+    // Much faster than OR-filtering both teams with per_page=100
     const matches = await pandaFetch(
-      `/lol/matches/past?filter[opponent_id]=${teamAId},${teamBId}&sort=-scheduled_at&per_page=20`,
+      `/lol/matches/past?filter[opponent_id]=${teamAId}&sort=-scheduled_at&per_page=30`,
       token
     );
 
+    const allMatches = Array.isArray(matches) ? matches : [];
+    const bothTeamMatches = allMatches.filter(
+      (m: any) => {
+        const opponentIds = (m.opponents || []).map((o: any) => o.opponent?.id);
+        return opponentIds.includes(teamBId);
+      }
+    );
+
     // Parse match results
-    const parsedMatches = (Array.isArray(matches) ? matches : []).map(
+    const parsedMatches = bothTeamMatches.map(
       (m: any) => {
         const opponents = (m.opponents || []).map((o: any) => ({
           id: o.opponent?.id,

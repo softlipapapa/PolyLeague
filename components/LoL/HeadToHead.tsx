@@ -37,7 +37,7 @@ function MatchRow({
 
   return (
     <div className="flex items-center gap-2 py-1.5 text-[11px]">
-      <span className="text-white/20 font-data w-16 shrink-0">{dateStr}</span>
+      <span className="text-white/50 font-data w-16 shrink-0">{dateStr}</span>
       <div className="flex items-center gap-1 flex-1 min-w-0">
         <span
           className={`truncate ${teamAWon ? "text-white/70 font-semibold" : "text-white/25"}`}

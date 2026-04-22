@@ -7,6 +7,7 @@ import useTopHolders from "@/hooks/useTopHolders";
 import TopHolders from "@/components/LoL/TopHolders";
 import OddsChart from "@/components/LoL/OddsChart";
 import HeadToHead from "@/components/LoL/HeadToHead";
+import { usePrefetchHeadToHead } from "@/hooks/useHeadToHead";
 import { formatVolume, formatCurrency, formatShares } from "@/utils/formatting";
 
 interface LoLMarketCardProps {
@@ -111,6 +112,10 @@ export default function LoLMarketCard({
 
   const { mainMarket, teamA, teamB, bestOf, league } = event;
   const status = event.status;
+
+  // Prefetch H2H in background so it's ready when user expands
+  const skipH2H = status === "resolved" || status === "settling";
+  usePrefetchHeadToHead(skipH2H ? null : teamA, skipH2H ? null : teamB);
 
   const { data: holdersData, isLoading: holdersLoading } = useTopHolders({
     conditionId: mainMarket?.conditionId ?? null,
