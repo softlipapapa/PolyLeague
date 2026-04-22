@@ -146,12 +146,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by status
     if (statusFilter && statusFilter !== "all") {
-      if (statusFilter === "live") {
-        // Include settling matches in the live tab
-        lolEvents = lolEvents.filter((e: any) => e.status === "live" || e.status === "settling");
-      } else {
-        lolEvents = lolEvents.filter((e: any) => e.status === statusFilter);
-      }
+      lolEvents = lolEvents.filter((e: any) => e.status === statusFilter);
     }
 
     // Sort upcoming by game start time ascending (soonest first)

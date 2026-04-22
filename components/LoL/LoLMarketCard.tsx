@@ -6,6 +6,7 @@ import type { PolymarketPosition } from "@/hooks/useUserPositions";
 import useTopHolders from "@/hooks/useTopHolders";
 import TopHolders from "@/components/LoL/TopHolders";
 import OddsChart from "@/components/LoL/OddsChart";
+import HeadToHead from "@/components/LoL/HeadToHead";
 import { formatVolume, formatCurrency, formatShares } from "@/utils/formatting";
 
 interface LoLMarketCardProps {
@@ -398,19 +399,32 @@ export default function LoLMarketCard({
             </svg>
           </button>
 
-          {/* Expanded: chart + top holders */}
+          {/* Expanded: two-column layout */}
           {expanded && (
-            <div className="mt-3 space-y-4">
-              <OddsChart
-                tokenId={mainMarket.clobTokenIds[0]}
-                teamName={teamA || mainMarket.outcomes[0]}
-                enabled={expanded}
-              />
-              <TopHolders
-                data={holdersData || []}
-                outcomes={mainMarket.outcomes}
-                isLoading={holdersLoading}
-              />
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left column: Chart + Top Holders */}
+              <div className="space-y-4">
+                <OddsChart
+                  tokenId={mainMarket.clobTokenIds[0]}
+                  teamName={teamA || mainMarket.outcomes[0]}
+                  enabled={expanded}
+                />
+                <TopHolders
+                  data={holdersData || []}
+                  outcomes={mainMarket.outcomes}
+                  isLoading={holdersLoading}
+                />
+              </div>
+              {/* Right column: Head-to-Head */}
+              {teamA && teamB && !isResolved && status !== "settling" && (
+                <div>
+                  <HeadToHead
+                    teamA={teamA}
+                    teamB={teamB}
+                    enabled={expanded}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -52,7 +52,7 @@ interface LoLMarketsPage {
   nextOffset: number;
 }
 
-export type MatchStatus = "live" | "upcoming" | "resolved";
+export type MatchStatus = "live" | "upcoming" | "resolved" | "settling";
 
 interface UseLoLMarketsOptions {
   league?: string | null;

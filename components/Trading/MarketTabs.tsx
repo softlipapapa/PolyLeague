@@ -8,7 +8,7 @@ import LoLMarkets from "@/components/LoL/LoLMarkets";
 
 import { cn } from "@/utils/classNames";
 
-type TabId = "live" | "upcoming" | "resolved" | "positions" | "orders";
+type TabId = "upcoming" | "live" | "settling" | "resolved" | "positions" | "orders";
 
 interface Tab {
   id: TabId;
@@ -16,15 +16,16 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { id: "live", label: "Live" },
   { id: "upcoming", label: "Upcoming" },
+  { id: "live", label: "Live" },
+  { id: "settling", label: "Settling" },
   { id: "resolved", label: "Results" },
   { id: "positions", label: "Positions" },
   { id: "orders", label: "Orders" },
 ];
 
 export default function MarketTabs() {
-  const [activeTab, setActiveTab] = useState<TabId>("live");
+  const [activeTab, setActiveTab] = useState<TabId>("upcoming");
 
   return (
     <div className="space-y-5">
@@ -51,8 +52,9 @@ export default function MarketTabs() {
 
       {/* Tab Content */}
       <div>
-        {activeTab === "live" && <LoLMarkets status="live" />}
         {activeTab === "upcoming" && <LoLMarkets status="upcoming" />}
+        {activeTab === "live" && <LoLMarkets status="live" />}
+        {activeTab === "settling" && <LoLMarkets status="settling" />}
         {activeTab === "resolved" && <LoLMarkets status="resolved" />}
         {activeTab === "positions" && <UserPositions />}
         {activeTab === "orders" && <ActiveOrders />}

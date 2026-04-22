@@ -167,7 +167,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     [relayClient, redeemPosition, queryClient]
   );
 
-  const statusLabel = status === "live" ? "Live" : status === "resolved" ? "Results" : "Upcoming";
+  const statusLabel = status === "live" ? "Live" : status === "settling" ? "Settling" : status === "resolved" ? "Results" : "Upcoming";
 
   return (
     <>

@@ -590,7 +590,35 @@ Write all code comments, git commit messages, and console logs in English.
 - `hooks/useLoLMarkets.ts` — added `"settling"` to status type
 - `components/LoL/LoLMarketCard.tsx` — amber settling badge
 
+### 2026-04-18 — Head-to-Head History, Tab Restructure, Clickable Traders
+
+**Done:**
+- PandaScore API integration for team head-to-head match history
+- Team name → PandaScore ID resolution with 24h cache, H2H data cached 6h server-side
+- Two-column expanded layout: left (Chart + Top Holders), right (Head-to-Head)
+- H2H shows: win summary bar, team names + scores per match row, league name, last 5 matches
+- Skipped for resolved/settling matches
+- Tab restructure: Upcoming (default) → Live → Settling → Results → Positions → Orders
+- Settling is now its own tab (previously bundled with Live)
+- Top Holders names/avatars link to Polymarket profile pages (`polymarket.com/{address}`)
+
+**New files:**
+- `app/api/head-to-head/route.ts` — PandaScore proxy, team ID resolution + past matches
+- `hooks/useHeadToHead.ts` — React Query hook with 6h staleTime
+- `components/LoL/HeadToHead.tsx` — H2H UI with summary bar + match rows
+
+**Updated files:**
+- `components/LoL/LoLMarketCard.tsx` — two-column grid layout for expanded section
+- `components/LoL/TopHolders.tsx` — clickable names/pfps to Polymarket profiles
+- `components/Trading/MarketTabs.tsx` — Upcoming default, Settling as separate tab
+- `components/LoL/LoLMarkets.tsx` — settling status label
+- `hooks/useLoLMarkets.ts` — `"settling"` added to `MatchStatus`
+- `app/api/lol-markets/route.ts` — reverted live filter (settling is its own tab now)
+
+**Env required:**
+- `PANDASCORE_API_KEY` in `.env.local`
+
 **Next steps:**
 - Test full betting flow live (connect → click team → sign → place order)
-- Phase 3.1: AI match analysis (Claude API sidebar)
 - Phase 3.2: Cross-platform odds comparison (Kalshi)
+- Phase 3.3: Player/Team info (Riot API / Oracle's Elixir)

@@ -2,6 +2,7 @@
 
 import type { TokenHolders } from "@/hooks/useTopHolders";
 import { formatAddress } from "@/utils/formatting";
+import { POLYMARKET_PROFILE_URL } from "@/constants/api";
 
 interface TopHoldersProps {
   data: TokenHolders[];
@@ -86,18 +87,25 @@ export default function TopHolders({
                 <span className="text-[10px] text-white/20 font-data w-4 shrink-0">
                   {i + 1}
                 </span>
-                {holder.profileImageOptimized || holder.profileImage ? (
-                  <img
-                    src={holder.profileImageOptimized || holder.profileImage}
-                    alt=""
-                    className="w-5 h-5 rounded-full shrink-0"
-                  />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-white/5 shrink-0" />
-                )}
-                <span className="text-xs text-white/70 truncate">
-                  {displayName}
-                </span>
+                <a
+                  href={POLYMARKET_PROFILE_URL(holder.proxyWallet)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
+                >
+                  {holder.profileImageOptimized || holder.profileImage ? (
+                    <img
+                      src={holder.profileImageOptimized || holder.profileImage}
+                      alt=""
+                      className="w-5 h-5 rounded-full shrink-0"
+                    />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-white/5 shrink-0" />
+                  )}
+                  <span className="text-xs text-white/70 truncate hover:text-purple-400 transition-colors">
+                    {displayName}
+                  </span>
+                </a>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
                 <span className={`text-[10px] font-semibold ${textColor}`}>
