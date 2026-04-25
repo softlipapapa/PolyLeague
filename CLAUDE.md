@@ -634,5 +634,63 @@ Write all code comments, git commit messages, and console logs in English.
 - `hooks/useHeadToHead.ts` — extracted fetchH2H, added usePrefetchHeadToHead hook
 
 **Next steps:**
-- Phase 3.3: Team info, rosters, recent form (PandaScore + optional Riot API)
-- Test full betting flow live (connect → click team → sign → place order)
+- ~~Phase 3.3: Team info, rosters, recent form (PandaScore + optional Riot API)~~ ✅
+
+### 2026-04-22 — Phase 3.3: Team Info, UI Polish, Leaderboard Categories
+
+**Done:**
+- PandaScore team info API: roster (sorted by role), recent form (W/L streak), last 5 match results
+- TeamInfo components displayed side-by-side (Team A | H2H | Team B) in 3-column grid
+- H2H now shown for all match statuses (settling/resolved included)
+- Expanded card layout restructured: chart full-width, team info 3-col, Top Holders collapsed
+- Section headers made more visible (11px, brighter colors, tighter tracking)
+- Toggle label changed: "Chart & Top Traders" → "Chart & Team Info"
+
+**League filter redesign:**
+- Major leagues (LCK, LPL, LEC, etc.) sorted first via prefix matching
+- Overflow leagues in +N dropdown with multi-column grid layout
+- Selected overflow league shown as separate pill next to +N button
+- League list cached in state so options persist when filtering
+- `flex-wrap` for alignment with match cards
+
+**Leaderboard improvements:**
+- Batched holder API calls (fix 414 URI Too Long with 10-per-batch)
+- 5 category tabs: Volume, Top Profit, Win Rate, Top Loss, Most Active
+- Each category sorts/filters/colors differently
+- WalletAvatar component: colored initials fallback for missing profile images
+- Clickable avatars/names linking to Polymarket profiles
+- Leaderboard button restyled (pill with border, more visible)
+
+**Rebrand to RiftMarket:**
+- Header: logo image (60px) + "Rift**Market**" text
+- Metadata: title, OG image, favicon (16/32/180/192/512px)
+- WalletConnect metadata updated
+- All PolyLeague references replaced
+
+**New files:**
+- `app/api/team-info/route.ts` — PandaScore team detail + roster + recent matches
+- `hooks/useTeamInfo.ts` — React Query hook with prefetch
+- `components/LoL/TeamInfo.tsx` — roster, form streak, recent matches UI
+- `components/shared/WalletAvatar.tsx` — deterministic colored avatar fallback
+- `public/` — logo.png, favicon variants, apple-touch-icon
+
+**Updated files:**
+- `components/LoL/LoLMarketCard.tsx` — 3-col layout, collapsible Top Holders, prefetch
+- `components/LoL/LoLMarkets.tsx` — cached allLeagues state
+- `components/LoL/LeagueFilter.tsx` — major league sort, +N dropdown, overflow pill
+- `components/LoL/HeadToHead.tsx` — brighter header, shown for all statuses
+- `components/LoL/OddsChart.tsx` — brighter section header
+- `components/LoL/TopHolders.tsx` — WalletAvatar, brighter header
+- `components/Header/index.tsx` — logo image, RiftMarket text, styled leaderboard button
+- `app/layout.tsx` — RiftMarket metadata, favicon/OG config
+- `app/leaderboard/page.tsx` — 5 category tabs, WalletAvatar, clickable profiles
+- `app/api/leaderboard/route.ts` — batched holder fetching
+- `app/globals.css` — scrollbar-hide utility
+- `hooks/useLeaderboard.ts` — Period type (unused, prepared for future)
+- `providers/WagmiProvider.tsx` — RiftMarket name/url
+
+**Next steps:**
+- Deploy to Vercel + bind custom domain
+- Register X account, post demo, apply for Builder Badge
+- V2 migration before April 28 cutover (separate branch)
+- Test full betting flow live
