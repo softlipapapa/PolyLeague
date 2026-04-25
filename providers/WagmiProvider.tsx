@@ -12,9 +12,9 @@ createAppKit({
   projectId: WALLETCONNECT_PROJECT_ID,
   networks: [polygon],
   metadata: {
-    name: "PolyLeague",
+    name: "RiftMarket",
     description: "LoL Esports Prediction Platform on Polymarket",
-    url: "https://polyleague.app",
+    url: "https://riftmarket.xyz",
     icons: [],
   },
   themeMode: "dark",

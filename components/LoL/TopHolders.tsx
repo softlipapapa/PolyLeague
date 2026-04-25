@@ -3,6 +3,7 @@
 import type { TokenHolders } from "@/hooks/useTopHolders";
 import { formatAddress } from "@/utils/formatting";
 import { POLYMARKET_PROFILE_URL } from "@/constants/api";
+import WalletAvatar from "@/components/shared/WalletAvatar";
 
 interface TopHoldersProps {
   data: TokenHolders[];
@@ -93,15 +94,12 @@ export default function TopHolders({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
                 >
-                  {holder.profileImageOptimized || holder.profileImage ? (
-                    <img
-                      src={holder.profileImageOptimized || holder.profileImage}
-                      alt=""
-                      className="w-5 h-5 rounded-full shrink-0"
-                    />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-white/5 shrink-0" />
-                  )}
+                  <WalletAvatar
+                    address={holder.proxyWallet}
+                    name={displayName}
+                    imageUrl={holder.profileImageOptimized || holder.profileImage || null}
+                    size="xs"
+                  />
                   <span className="text-xs text-white/70 truncate hover:text-purple-400 transition-colors">
                     {displayName}
                   </span>

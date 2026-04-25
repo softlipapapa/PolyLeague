@@ -69,7 +69,17 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     () => data?.pages.flatMap((page) => page.events) || [],
     [data]
   );
-  const leagues = useMemo(() => data?.pages[0]?.leagues || [], [data]);
+  // Cache the full leagues list from the unfiltered response so it doesn't
+  // disappear when a single league is selected
+  const [allLeagues, setAllLeagues] = useState<string[]>([]);
+  const rawLeagues = data?.pages[0]?.leagues;
+  useEffect(() => {
+    // Only update when we get a larger or initial list (i.e. "All" is selected)
+    if (rawLeagues && rawLeagues.length > allLeagues.length) {
+      setAllLeagues(rawLeagues);
+    }
+  }, [rawLeagues]);
+  const leagues = allLeagues;
 
   // Build a map of tokenId -> position for quick lookup
   const positionsByToken = useMemo(() => {

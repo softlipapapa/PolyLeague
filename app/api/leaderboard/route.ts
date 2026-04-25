@@ -31,10 +31,20 @@ interface HolderEntry {
   winrate?: WinrateStats | null;
 }
 
-async function fetchWinrate(proxyWallet: string): Promise<WinrateStats> {
+function getPeriodCutoff(period: string): number | null {
+  const now = Date.now();
+  switch (period) {
+    case "1d": return now - 24 * 60 * 60 * 1000;
+    case "7d": return now - 7 * 24 * 60 * 60 * 1000;
+    case "30d": return now - 30 * 24 * 60 * 60 * 1000;
+    default: return null; // "all"
+  }
+}
+
+async function fetchWinrate(proxyWallet: string, cutoffMs: number | null): Promise<WinrateStats> {
   try {
-    // Fetch closed LoL positions for this trader (up to 50)
-    const url = `${DATA_API_URL}/closed-positions?user=${proxyWallet}&title=LoL&limit=50&sortBy=TIMESTAMP&sortDirection=DESC`;
+    // Fetch closed LoL positions for this trader (up to 100)
+    const url = `${DATA_API_URL}/closed-positions?user=${proxyWallet}&title=LoL&limit=100&sortBy=TIMESTAMP&sortDirection=DESC`;
     const res = await fetch(url, {
       headers: { "Content-Type": "application/json" },
     });
@@ -54,13 +64,19 @@ async function fetchWinrate(proxyWallet: string): Promise<WinrateStats> {
     let totalRealizedPnl = 0;
 
     for (const pos of positions) {
+      // Filter by time period if set
+      if (cutoffMs) {
+        const posTime = pos.resolvedAt ? new Date(pos.resolvedAt).getTime()
+          : pos.createdAt ? new Date(pos.createdAt).getTime() : 0;
+        if (posTime < cutoffMs) continue;
+      }
+
       totalRealizedPnl += pos.realizedPnl || 0;
       if (pos.realizedPnl > 0) {
         wins++;
       } else if (pos.realizedPnl < 0) {
         losses++;
       }
-      // realizedPnl === 0 is a push / break-even, not counted as win or loss
     }
 
     const totalResolved = wins + losses;
@@ -79,6 +95,8 @@ async function fetchWinrate(proxyWallet: string): Promise<WinrateStats> {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const limit = parseInt(searchParams.get("limit") || "50");
+  const period = searchParams.get("period") || "all";
+  const cutoffMs = getPeriodCutoff(period);
 
   try {
     // 1. Fetch active LoL events from Gamma API
@@ -129,23 +147,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ traders: [], totalMarkets: 0 });
     }
 
-    // 3. Fetch holders for all markets (batch by comma-separated conditionIds)
-    // Data API accepts comma-separated conditionIds
-    const conditionIds = marketMeta.map((m) => m.conditionId).join(",");
-    const holdersUrl = `${DATA_API_URL}/holders?market=${encodeURIComponent(conditionIds)}&limit=20&minBalance=1`;
+    // 3. Fetch holders in batches to avoid 414 URI Too Long
+    const BATCH_SIZE = 10;
+    const holdersData: any[] = [];
 
-    const holdersRes = await fetch(holdersUrl, {
-      headers: { "Content-Type": "application/json" },
-      next: { revalidate: 120 },
-    });
+    for (let i = 0; i < marketMeta.length; i += BATCH_SIZE) {
+      const batch = marketMeta.slice(i, i + BATCH_SIZE);
+      const conditionIds = batch.map((m) => m.conditionId).join(",");
+      const holdersUrl = `${DATA_API_URL}/holders?market=${encodeURIComponent(conditionIds)}&limit=20&minBalance=1`;
 
-    if (!holdersRes.ok) throw new Error(`Data API error: ${holdersRes.status}`);
-    const holdersData = await holdersRes.json();
+      const holdersRes = await fetch(holdersUrl, {
+        headers: { "Content-Type": "application/json" },
+        next: { revalidate: 120 },
+      });
+
+      if (!holdersRes.ok) {
+        console.warn(`Data API batch error: ${holdersRes.status}, skipping batch ${i}`);
+        continue;
+      }
+
+      const batchData = await holdersRes.json();
+      if (Array.isArray(batchData)) {
+        holdersData.push(...batchData);
+      }
+    }
 
     // 4. Aggregate by trader across all markets
     const traderMap = new Map<string, HolderEntry>();
 
-    if (Array.isArray(holdersData)) {
+    {
       for (const tokenGroup of holdersData) {
         for (const holder of tokenGroup.holders || []) {
           const key = holder.proxyWallet;
@@ -196,7 +226,7 @@ export async function GET(request: NextRequest) {
 
     // 6. Fetch winrates for all top traders in parallel
     const winrateResults = await Promise.all(
-      topTraders.map((t) => fetchWinrate(t.proxyWallet))
+      topTraders.map((t) => fetchWinrate(t.proxyWallet, cutoffMs))
     );
 
     const traders = topTraders.map((t, i) => ({

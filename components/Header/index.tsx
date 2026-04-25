@@ -33,12 +33,15 @@ export default function Header({
   return (
     <header className="flex items-center justify-between w-full py-2">
       <div className="flex items-center gap-4">
-        <Link href="/" className="text-lg font-bold tracking-tight text-white hover:opacity-80 transition-opacity">
-          Poly<span className="text-purple-400">League</span>
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <img src="/logo.png" alt="RiftMarket" className="h-[60px] w-[60px] rounded-lg" />
+          <span className="text-lg font-bold tracking-tight text-white">
+            Rift<span className="text-blue-400">Market</span>
+          </span>
         </Link>
         <Link
           href="/leaderboard"
-          className="text-xs font-medium text-white/30 hover:text-white/60 transition-colors"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 border border-white/8 hover:border-white/15 transition-all"
         >
           Leaderboard
         </Link>

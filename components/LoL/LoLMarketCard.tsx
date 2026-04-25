@@ -7,7 +7,9 @@ import useTopHolders from "@/hooks/useTopHolders";
 import TopHolders from "@/components/LoL/TopHolders";
 import OddsChart from "@/components/LoL/OddsChart";
 import HeadToHead from "@/components/LoL/HeadToHead";
+import TeamInfo from "@/components/LoL/TeamInfo";
 import { usePrefetchHeadToHead } from "@/hooks/useHeadToHead";
+import { usePrefetchTeamInfo } from "@/hooks/useTeamInfo";
 import { formatVolume, formatCurrency, formatShares } from "@/utils/formatting";
 
 interface LoLMarketCardProps {
@@ -109,13 +111,15 @@ export default function LoLMarketCard({
   onConnectPrompt,
 }: LoLMarketCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [holdersExpanded, setHoldersExpanded] = useState(false);
 
   const { mainMarket, teamA, teamB, bestOf, league } = event;
   const status = event.status;
 
-  // Prefetch H2H in background so it's ready when user expands
-  const skipH2H = status === "resolved" || status === "settling";
-  usePrefetchHeadToHead(skipH2H ? null : teamA, skipH2H ? null : teamB);
+  // Prefetch H2H and team info in background so it's ready when user expands
+  usePrefetchHeadToHead(teamA, teamB);
+  usePrefetchTeamInfo(teamA);
+  usePrefetchTeamInfo(teamB);
 
   const { data: holdersData, isLoading: holdersLoading } = useTopHolders({
     conditionId: mainMarket?.conditionId ?? null,
@@ -391,7 +395,7 @@ export default function LoLMarketCard({
             className="w-full mt-3 pt-3 border-t border-white/5 flex items-center justify-center gap-1.5 cursor-pointer group/expand"
           >
             <span className="text-[10px] font-medium text-white/25 group-hover/expand:text-white/40 transition-colors">
-              {expanded ? "Hide Details" : "Chart & Top Traders"}
+              {expanded ? "Hide Details" : "Chart & Team Info"}
             </span>
             <svg
               className={`w-3 h-3 text-white/20 group-hover/expand:text-white/35 transition-all duration-200 ${expanded ? "rotate-180" : ""}`}
@@ -404,32 +408,54 @@ export default function LoLMarketCard({
             </svg>
           </button>
 
-          {/* Expanded: two-column layout */}
+          {/* Expanded details */}
           {expanded && (
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Left column: Chart + Top Holders */}
-              <div className="space-y-4">
-                <OddsChart
-                  tokenId={mainMarket.clobTokenIds[0]}
-                  teamName={teamA || mainMarket.outcomes[0]}
-                  enabled={expanded}
-                />
-                <TopHolders
-                  data={holdersData || []}
-                  outcomes={mainMarket.outcomes}
-                  isLoading={holdersLoading}
-                />
-              </div>
-              {/* Right column: Head-to-Head */}
-              {teamA && teamB && !isResolved && status !== "settling" && (
-                <div>
-                  <HeadToHead
-                    teamA={teamA}
-                    teamB={teamB}
-                    enabled={expanded}
-                  />
+            <div className="mt-3 space-y-4">
+              {/* Chart — full width */}
+              <OddsChart
+                tokenId={mainMarket.clobTokenIds[0]}
+                teamName={teamA || mainMarket.outcomes[0]}
+                enabled={expanded}
+              />
+
+              {/* H2H + Team Info: 3-column grid */}
+              {teamA && teamB && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <TeamInfo teamName={teamA} enabled={expanded} />
+                  <HeadToHead teamA={teamA} teamB={teamB} enabled={expanded} />
+                  <TeamInfo teamName={teamB} enabled={expanded} />
                 </div>
               )}
+
+              {/* Top Holders — collapsible */}
+              <div className="border-t border-white/5 pt-2">
+                <button
+                  onClick={() => setHoldersExpanded((prev) => !prev)}
+                  className="flex items-center gap-1.5 group/holders cursor-pointer"
+                >
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40 group-hover/holders:text-white/55 transition-colors">
+                    Top Traders
+                  </span>
+                  <svg
+                    className={`w-3 h-3 text-white/20 group-hover/holders:text-white/35 transition-all duration-200 ${holdersExpanded ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {holdersExpanded && (
+                  <div className="mt-2">
+                    <TopHolders
+                      data={holdersData || []}
+                      outcomes={mainMarket.outcomes}
+                      isLoading={holdersLoading}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

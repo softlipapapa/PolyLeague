@@ -1,16 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import useLeaderboard, { type LeaderboardTrader } from "@/hooks/useLeaderboard";
 import { formatAddress } from "@/utils/formatting";
 import LoadingState from "@/components/shared/LoadingState";
 import ErrorState from "@/components/shared/ErrorState";
+import WalletAvatar from "@/components/shared/WalletAvatar";
+import { POLYMARKET_PROFILE_URL } from "@/constants/api";
+
+type Category = "volume" | "profit" | "winrate" | "loss" | "activity";
+
+const CATEGORIES: { value: Category; label: string; description: string }[] = [
+  { value: "volume", label: "Volume", description: "By total holdings" },
+  { value: "profit", label: "Top Profit", description: "By realized PnL" },
+  { value: "winrate", label: "Win Rate", description: "By win percentage" },
+  { value: "loss", label: "Top Loss", description: "By biggest losses" },
+  { value: "activity", label: "Most Active", description: "By number of bets" },
+];
 
 function formatAmount(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(2)}M`;
   if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
   return `$${amount.toFixed(0)}`;
+}
+
+function formatPnl(amount: number): string {
+  const prefix = amount >= 0 ? "+" : "";
+  return `${prefix}${formatAmount(amount)}`;
+}
+
+function getMetricValue(trader: LeaderboardTrader, category: Category): number {
+  const wr = trader.winrate;
+  switch (category) {
+    case "volume": return trader.totalAmount;
+    case "profit": return wr?.totalRealizedPnl ?? 0;
+    case "winrate": return wr?.winrate ?? -1;
+    case "loss": return wr?.totalRealizedPnl ?? 0;
+    case "activity": return wr?.totalResolved ?? 0;
+  }
+}
+
+function formatMetric(value: number, category: Category): string {
+  switch (category) {
+    case "volume": return formatAmount(value);
+    case "profit": return formatPnl(value);
+    case "winrate": return value >= 0 ? `${value.toFixed(0)}%` : "--";
+    case "loss": return formatPnl(value);
+    case "activity": return `${value} bets`;
+  }
+}
+
+function metricColor(value: number, category: Category): string {
+  switch (category) {
+    case "profit": return value > 0 ? "text-green-400" : value < 0 ? "text-red-400" : "text-white/40";
+    case "winrate": return value >= 55 ? "text-green-400" : value >= 45 ? "text-amber-400" : value >= 0 ? "text-red-400" : "text-white/20";
+    case "loss": return "text-red-400";
+    default: return "text-white/70";
+  }
+}
+
+function sortTraders(traders: LeaderboardTrader[], category: Category): LeaderboardTrader[] {
+  return [...traders].sort((a, b) => {
+    const aVal = getMetricValue(a, category);
+    const bVal = getMetricValue(b, category);
+    if (category === "loss") return aVal - bVal; // most negative first
+    return bVal - aVal; // highest first
+  }).filter((t) => {
+    // Filter out irrelevant traders per category
+    const wr = t.winrate;
+    if (category === "profit") return wr && wr.totalRealizedPnl > 0;
+    if (category === "winrate") return wr && wr.winrate !== null && wr.totalResolved >= 3;
+    if (category === "loss") return wr && wr.totalRealizedPnl < 0;
+    if (category === "activity") return wr && wr.totalResolved > 0;
+    return true;
+  });
 }
 
 function TraderHoverCard({ trader, visible }: { trader: LeaderboardTrader; visible: boolean }) {
@@ -25,18 +89,20 @@ function TraderHoverCard({ trader, visible }: { trader: LeaderboardTrader; visib
         : "opacity-0 pointer-events-none translate-y-1"
     }`}>
       {/* Header: avatar + name */}
-      <div className="flex items-center gap-3 mb-4">
-        {trader.profileImageOptimized || trader.profileImage ? (
-          <img
-            src={trader.profileImageOptimized || trader.profileImage}
-            alt=""
-            className="w-10 h-10 rounded-full shrink-0"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-white/5 shrink-0" />
-        )}
+      <a
+        href={POLYMARKET_PROFILE_URL(trader.proxyWallet)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 mb-4 hover:opacity-80 transition-opacity"
+      >
+        <WalletAvatar
+          address={trader.proxyWallet}
+          name={trader.displayUsernamePublic && trader.name ? trader.name : trader.pseudonym}
+          imageUrl={trader.profileImageOptimized || trader.profileImage || null}
+          size="md"
+        />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white/90 truncate">
+          <p className="text-sm font-semibold text-white/90 truncate hover:text-purple-400 transition-colors">
             {trader.displayUsernamePublic && trader.name
               ? trader.name
               : trader.pseudonym || formatAddress(trader.proxyWallet)}
@@ -45,7 +111,7 @@ function TraderHoverCard({ trader, visible }: { trader: LeaderboardTrader; visib
             {formatAddress(trader.proxyWallet, 8, 6)}
           </p>
         </div>
-      </div>
+      </a>
 
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-3 mb-4">
@@ -159,18 +225,23 @@ function TraderHoverCard({ trader, visible }: { trader: LeaderboardTrader; visib
 function TraderRow({
   trader,
   rank,
-  maxAmount,
+  category,
+  maxMetric,
 }: {
   trader: LeaderboardTrader;
   rank: number;
-  maxAmount: number;
+  category: Category;
+  maxMetric: number;
 }) {
   const displayName =
     trader.displayUsernamePublic && trader.name
       ? trader.name
       : trader.pseudonym || formatAddress(trader.proxyWallet);
 
-  const barWidth = maxAmount > 0 ? Math.max((trader.totalAmount / maxAmount) * 100, 3) : 0;
+  const metric = getMetricValue(trader, category);
+  const absMetric = Math.abs(metric);
+  const absMax = Math.abs(maxMetric);
+  const barWidth = absMax > 0 ? Math.max((absMetric / absMax) * 100, 3) : 0;
 
   const rankBadge =
     rank === 1
@@ -182,9 +253,6 @@ function TraderRow({
           : "text-white/20";
 
   const [hovered, setHovered] = useState(false);
-
-  const wr = trader.winrate;
-  const hasWinrate = wr && wr.winrate !== null;
 
   return (
     <div
@@ -207,38 +275,33 @@ function TraderRow({
             <span className={`text-sm font-bold font-data w-7 shrink-0 ${rankBadge}`}>
               {rank}
             </span>
-            {trader.profileImageOptimized || trader.profileImage ? (
-              <img
-                src={trader.profileImageOptimized || trader.profileImage}
-                alt=""
-                className="w-8 h-8 rounded-full shrink-0"
+            <a
+              href={POLYMARKET_PROFILE_URL(trader.proxyWallet)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <WalletAvatar
+                address={trader.proxyWallet}
+                name={displayName}
+                imageUrl={trader.profileImageOptimized || trader.profileImage || null}
+                size="sm"
               />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-white/5 shrink-0" />
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white/80 truncate">
-                {displayName}
-              </p>
-              <p className="text-[10px] text-white/20">
-                {trader.marketCount} market{trader.marketCount !== 1 ? "s" : ""}
-              </p>
-            </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-white/80 truncate hover:text-purple-400 transition-colors">
+                  {displayName}
+                </p>
+                <p className="text-[10px] text-white/20">
+                  {trader.marketCount} market{trader.marketCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </a>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0 ml-3">
-            {/* Compact winrate */}
-            {hasWinrate && (
-              <span className={`text-xs font-bold font-data ${
-                wr!.winrate! >= 55 ? "text-green-400" : wr!.winrate! >= 45 ? "text-amber-400" : "text-red-400"
-              }`}>
-                {wr!.winrate!.toFixed(0)}%
-              </span>
-            )}
-            <span className="text-sm font-bold font-data text-white/70">
-              {formatAmount(trader.totalAmount)}
-            </span>
-          </div>
+          <span className={`text-sm font-bold font-data shrink-0 ml-3 ${metricColor(metric, category)}`}>
+            {formatMetric(metric, category)}
+          </span>
         </div>
       </div>
 
@@ -250,16 +313,21 @@ function TraderRow({
 
 export default function LeaderboardPage() {
   const { data, isLoading, error } = useLeaderboard(50);
+  const [category, setCategory] = useState<Category>("volume");
 
-  const traders = data?.traders || [];
+  const allTraders = data?.traders || [];
   const totalMarkets = data?.totalMarkets || 0;
-  const maxAmount = traders.length > 0 ? traders[0].totalAmount : 0;
+
+  const sorted = useMemo(() => sortTraders(allTraders, category), [allTraders, category]);
+  const maxMetric = sorted.length > 0 ? getMetricValue(sorted[0], category) : 0;
+
+  const activeCategory = CATEGORIES.find((c) => c.value === category)!;
 
   return (
     <div className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <Link
@@ -280,6 +348,23 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
+        {/* Category tabs */}
+        <div className="flex gap-1.5 flex-wrap mb-4">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => setCategory(cat.value)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${
+                category === cat.value
+                  ? "bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30"
+                  : "bg-white/5 text-white/35 hover:text-white/60 hover:bg-white/8"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
         {/* Content */}
         {isLoading && <LoadingState message="Loading leaderboard..." />}
 
@@ -287,35 +372,35 @@ export default function LeaderboardPage() {
           <ErrorState error={error} title="Error loading leaderboard" />
         )}
 
-        {!isLoading && !error && traders.length === 0 && (
+        {!isLoading && !error && sorted.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm text-white/30">No active LoL markets found</p>
+            <p className="text-sm text-white/30">
+              {allTraders.length === 0
+                ? "No active LoL markets found"
+                : `No traders match "${activeCategory.label}" criteria`}
+            </p>
           </div>
         )}
 
-        {!isLoading && !error && traders.length > 0 && (
+        {!isLoading && !error && sorted.length > 0 && (
           <div className="space-y-1">
             {/* Column headers */}
             <div className="flex items-center justify-between px-4 py-2">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-white/20">
                 Trader
               </span>
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-white/20">
-                  Win%
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-white/20">
-                  Holdings
-                </span>
-              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-white/20">
+                {activeCategory.label}
+              </span>
             </div>
 
-            {traders.map((trader, i) => (
+            {sorted.map((trader, i) => (
               <TraderRow
                 key={trader.proxyWallet}
                 trader={trader}
                 rank={i + 1}
-                maxAmount={maxAmount}
+                category={category}
+                maxMetric={maxMetric}
               />
             ))}
           </div>

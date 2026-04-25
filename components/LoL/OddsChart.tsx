@@ -129,7 +129,7 @@ export default function OddsChart({
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
             {teamName} Odds
           </span>
           {priceChange && (

@@ -30,11 +30,13 @@ interface LeaderboardResponse {
   totalMarkets: number;
 }
 
-export default function useLeaderboard(limit = 50) {
+export type Period = "1d" | "7d" | "30d" | "all";
+
+export default function useLeaderboard(limit = 50, period: Period = "all") {
   return useQuery({
-    queryKey: ["leaderboard", limit],
+    queryKey: ["leaderboard", limit, period],
     queryFn: async (): Promise<LeaderboardResponse> => {
-      const response = await fetch(`/api/leaderboard?limit=${limit}`);
+      const response = await fetch(`/api/leaderboard?limit=${limit}&period=${period}`);
       if (!response.ok) throw new Error("Failed to fetch leaderboard");
       return response.json();
     },
