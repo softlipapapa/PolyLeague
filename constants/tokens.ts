@@ -3,6 +3,18 @@ export const USDC_E_CONTRACT_ADDRESS =
 
 export const USDC_E_DECIMALS = 6;
 
+// Native USDC on Polygon
+export const USDC_CONTRACT_ADDRESS =
+  "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359" as const;
+
+export const USDC_DECIMALS = 6;
+
+// WETH on Polygon
+export const WETH_CONTRACT_ADDRESS =
+  "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619" as const;
+
+export const WETH_DECIMALS = 18;
+
 export const CTF_CONTRACT_ADDRESS =
   "0x4d97dcd97ec945f40cf65f87097ace5ea0476045" as const;
 

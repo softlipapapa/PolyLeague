@@ -12,7 +12,7 @@ export default function PolygonAssets() {
 
   const { eoaAddress } = useWallet();
   const { derivedSafeAddressFromEoa } = useSafeDeployment(eoaAddress);
-  const { formattedUsdcBalance, isLoading, isError } = usePolygonBalances(
+  const { tokens, formattedTotal, isLoading, isError } = usePolygonBalances(
     derivedSafeAddressFromEoa
   );
 
@@ -22,18 +22,19 @@ export default function PolygonAssets() {
 
   return (
     <div className="glass px-5 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-3">
+      {/* Total balance */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-baseline gap-2">
           <span className="text-2xl font-bold font-data tabular-nums">
             {isLoading ? (
               <span className="text-white/20">--</span>
             ) : isError ? (
               "$0.00"
             ) : (
-              `$${formattedUsdcBalance}`
+              `$${formattedTotal}`
             )}
           </span>
-          <span className="text-xs text-white/25 font-medium">USDC.e</span>
+          <span className="text-xs text-white/25 font-medium">Total</span>
         </div>
         <button
           onClick={() => setIsTransferModalOpen(true)}
@@ -42,6 +43,23 @@ export default function PolygonAssets() {
           Send
         </button>
       </div>
+
+      {/* Token breakdown */}
+      {!isLoading && tokens.length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {tokens.map((t) => (
+            <div key={t.symbol} className="flex items-baseline gap-1.5">
+              <span className="text-xs font-data text-white/50 tabular-nums">
+                {t.formatted}
+              </span>
+              <span className="text-[10px] text-white/20 font-medium">
+                {t.symbol}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {isError && (
         <p className="text-[10px] text-white/15 mt-1">
           Could not load balance

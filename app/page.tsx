@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useTrading } from "@/providers/TradingProvider";
 import Header from "@/components/Header";
-import PolygonAssets from "@/components/PolygonAssets";
 import SessionSetupModal from "@/components/SessionSetupModal";
 import MarketTabs from "@/components/Trading/MarketTabs";
 import GeoBlockedBanner from "@/components/GeoBlockedBanner";
@@ -59,8 +58,6 @@ export default function Home() {
       {isGeoblocked && !isGeoblockLoading && (
         <GeoBlockedBanner geoblockStatus={geoblockStatus} />
       )}
-
-      <PolygonAssets />
 
       {/* Session setup modal — shown when user triggers first bet */}
       {showSetupModal && (

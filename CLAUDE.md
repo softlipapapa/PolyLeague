@@ -694,3 +694,35 @@ Write all code comments, git commit messages, and console logs in English.
 - Register X account, post demo, apply for Builder Badge
 - V2 migration before April 28 cutover (separate branch)
 - Test full betting flow live
+
+### 2026-04-26 — Wallet UX: Balance in Header, Deposit via Bridge API, Withdraw
+
+**Done:**
+- Moved balance display from standalone PolygonAssets card into WalletInfo (top-right header, next to Safe address)
+- Balance shown as compact `$XX.XX` pill; click to expand dropdown with token breakdown
+- Amber pulse dot when balance < $1 to nudge users to deposit
+- Deposit notice in dropdown: "Send USDC.e to your Safe wallet address"
+- Withdraw button in dropdown opens TransferModal (send USDC.e to any address)
+- Removed standalone PolygonAssets from main page (no duplicate)
+- Multi-token balance display: USDC.e, USDC, WETH, POL with USD values
+- Polymarket Bridge API integration (WIP):
+  - API route proxying `bridge.polymarket.com` (deposit addresses, supported assets, status, quote)
+  - `useDeposit` hook: generate deposit addresses, poll status, get quotes
+  - Supports 13 chains (Ethereum, Polygon, Arbitrum, Base, Optimism, BSC, Solana, Bitcoin, etc.)
+  - All deposits auto-convert to pUSD on Polygon via Fun.xyz
+
+**New files:**
+- `app/api/bridge/route.ts` — Bridge API proxy (GET supported-assets/status, POST deposit/quote)
+- `hooks/useDeposit.ts` — `useDeposit` hook + `useSupportedAssets` hook with types
+
+**Updated files:**
+- `components/Header/WalletInfo.tsx` — balance pill, dropdown with token breakdown + deposit notice + withdraw
+- `app/page.tsx` — removed PolygonAssets import and usage
+- `components/PolygonAssets/index.tsx` — updated to use multi-token balance fields
+- `constants/tokens.ts` — added USDC, WETH contract addresses and decimals
+- `hooks/usePolygonBalances.ts` — multi-token balance (USDC.e, USDC, WETH, POL) with price feeds
+
+**Next steps (deposit feature):**
+- Build DepositModal component (chain/token selector, deposit address display, QR code, status polling)
+- Wire DepositModal into WalletInfo dropdown
+- Test end-to-end deposit flow with Bridge API
