@@ -60,6 +60,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(await res.json());
   }
 
+  if (action === "withdraw") {
+    const body = await req.json();
+    const res = await fetch(`${BRIDGE_BASE}/withdraw`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address: body.address,
+        toChainId: body.toChainId,
+        toTokenAddress: body.toTokenAddress,
+        recipientAddr: body.recipientAddr,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: err.error || "Failed to create withdrawal" },
+        { status: res.status }
+      );
+    }
+    return NextResponse.json(await res.json());
+  }
+
   if (action === "quote") {
     const body = await req.json();
     const res = await fetch(`${BRIDGE_BASE}/quote`, {

@@ -723,6 +723,32 @@ Write all code comments, git commit messages, and console logs in English.
 - `hooks/usePolygonBalances.ts` — multi-token balance (USDC.e, USDC, WETH, POL) with price feeds
 
 **Next steps (deposit feature):**
-- Build DepositModal component (chain/token selector, deposit address display, QR code, status polling)
-- Wire DepositModal into WalletInfo dropdown
-- Test end-to-end deposit flow with Bridge API
+- ~~Build DepositModal component~~ ✅
+- ~~Wire DepositModal into WalletInfo dropdown~~ ✅
+- Test end-to-end deposit/withdraw flow with Bridge API
+
+### 2026-04-26 — DepositModal, Cross-Chain Withdraw, Dropdown Selectors
+
+**Done:**
+- DepositModal with Polymarket-style dropdown menus for chain (13 chains) and token selection
+- Deposit address generation via Bridge API, click-to-copy, status polling (15s interval)
+- Cross-chain withdraw: TransferModal rewritten with destination chain/token dropdowns
+  - Polygon = direct Safe Relayer transfer (instant, gasless)
+  - Other chains = Bridge `/withdraw` API (USDC.e → bridge address → auto-convert to destination)
+  - Bridge tx status polling with live progress display
+- SharedSelectDropdown component extracted for reuse across Deposit/Withdraw modals
+- Balance dropdown centered on pill (was right-aligned)
+- Deposit + Withdraw buttons side-by-side in balance dropdown
+
+**New files:**
+- `components/DepositModal.tsx` — cross-chain deposit modal with chain/token dropdowns + status
+- `components/shared/SelectDropdown.tsx` — reusable dropdown select component
+
+**Updated files:**
+- `app/api/bridge/route.ts` — added `withdraw` action proxy
+- `components/Header/WalletInfo.tsx` — centered dropdown, Deposit+Withdraw buttons, wired DepositModal
+- `components/PolygonAssets/TransferModal.tsx` — rewritten with chain/token dropdowns + bridge withdraw
+
+**Next steps:**
+- Light/dark theme toggle (ThemeProvider started, not wired)
+- Test end-to-end deposit/withdraw flow with Bridge API

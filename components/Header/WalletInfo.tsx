@@ -7,6 +7,7 @@ import useSafeDeployment from "@/hooks/useSafeDeployment";
 import usePolygonBalances from "@/hooks/usePolygonBalances";
 import { formatAddress } from "@/utils/formatting";
 import TransferModal from "@/components/PolygonAssets/TransferModal";
+import DepositModal from "@/components/DepositModal";
 
 export default function WalletInfo({
   onDisconnect,
@@ -23,6 +24,7 @@ export default function WalletInfo({
   );
 
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [showFundingTip, setShowFundingTip] = useState(false);
 
   const totalUsd = parseFloat(formattedTotal || "0");
@@ -54,7 +56,7 @@ export default function WalletInfo({
 
             {/* Funding tip dropdown */}
             {showFundingTip && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl z-50">
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl z-50">
                 {/* Token breakdown */}
                 {tokens.length > 0 && (
                   <div className="mb-3 space-y-1.5">
@@ -69,23 +71,27 @@ export default function WalletInfo({
                   </div>
                 )}
 
-                {/* Funding notice */}
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-3">
-                  <p className="text-[11px] text-amber-300/90 leading-relaxed">
-                    <span className="font-semibold">Deposit Notice:</span> To place bets, send USDC.e to your Safe wallet address. Click the address to copy it.
-                  </p>
+                {/* Deposit + Withdraw buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowFundingTip(false);
+                      setIsDepositModalOpen(true);
+                    }}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium text-green-400/80 hover:text-green-300 bg-green-500/10 hover:bg-green-500/15 border border-green-500/20 transition-all"
+                  >
+                    Deposit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFundingTip(false);
+                      setIsTransferModalOpen(true);
+                    }}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium text-white/60 hover:text-white/90 bg-white/5 hover:bg-white/10 border border-white/8 transition-all"
+                  >
+                    Withdraw
+                  </button>
                 </div>
-
-                {/* Withdraw button */}
-                <button
-                  onClick={() => {
-                    setShowFundingTip(false);
-                    setIsTransferModalOpen(true);
-                  }}
-                  className="w-full py-2 rounded-lg text-xs font-medium text-white/60 hover:text-white/90 bg-white/5 hover:bg-white/10 border border-white/8 transition-all"
-                >
-                  Withdraw
-                </button>
               </div>
             )}
           </div>
@@ -124,6 +130,10 @@ export default function WalletInfo({
       <TransferModal
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
+      />
+      <DepositModal
+        isOpen={isDepositModalOpen}
+        onClose={() => setIsDepositModalOpen(false)}
       />
     </>
   );
