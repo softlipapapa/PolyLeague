@@ -752,3 +752,24 @@ Write all code comments, git commit messages, and console logs in English.
 **Next steps:**
 - Light/dark theme toggle (ThemeProvider started, not wired)
 - Test end-to-end deposit/withdraw flow with Bridge API
+
+### 2026-04-29 — Phase 3.4: Per-League Stream Links
+
+**Done:**
+- Stream button on each match card now links to the correct league's Twitch/YouTube channel
+- Previously all matches fell back to `twitch.tv/riotgames` because ~95% of Polymarket titles lack league info
+- Rewrote title parser to handle 4 formats: `LoL: ... (BOx) - League`, `LEC: Team vs Team`, `LoL: ... (BOx)`, `LoL: Team vs Team`
+- Added `TEAM_LEAGUE` lookup table (~80 teams) to infer league from team names when title has no league
+- Added partial-match fallback in stream hook (e.g. "LCK Challengers" → "LCK" channel)
+- Fixed LTA channel: `twitch.tv/lta` (was incorrectly using `twitch.tv/lcs`)
+- Added `LCK CL` and `LDL` league channel entries
+- Verified all Twitch channels exist (200 status)
+
+**New files:**
+- `app/api/stream-links/route.ts` — LoL Esports + PandaScore live stream API, static league channel fallbacks
+- `hooks/useStreamLinks.ts` — stream link resolution: live data → league fallback → riotgames last resort
+
+**Updated files:**
+- `app/api/lol-markets/route.ts` — multi-format title parser, TEAM_LEAGUE lookup, league inference
+- `components/LoL/LoLMarketCard.tsx` — stream button UI (Twitch/YouTube icon + "Watch"/"Stream" label)
+- `components/LoL/LoLMarkets.tsx` — wired useStreamLinks, passes streamLink to each card
