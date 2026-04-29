@@ -6,9 +6,12 @@ import {
 import { polygon } from "viem/chains";
 import {
   USDC_E_CONTRACT_ADDRESS,
+  PUSD_CONTRACT_ADDRESS,
   CTF_CONTRACT_ADDRESS,
   CTF_EXCHANGE_ADDRESS,
   NEG_RISK_CTF_EXCHANGE_ADDRESS,
+  CTF_EXCHANGE_ADDRESS_V2,
+  NEG_RISK_CTF_EXCHANGE_ADDRESS_V2,
   NEG_RISK_ADAPTER_ADDRESS,
 } from "@/constants/tokens";
 import { POLYGON_RPC_URL } from "@/constants/polymarket";
@@ -47,13 +50,25 @@ const publicClient = createPublicClient({
 const USDC_E_SPENDERS = [
   { address: CTF_CONTRACT_ADDRESS, name: "CTF Contract" },
   { address: NEG_RISK_ADAPTER_ADDRESS, name: "Neg Risk Adapter" },
-  { address: CTF_EXCHANGE_ADDRESS, name: "CTF Exchange" },
-  { address: NEG_RISK_CTF_EXCHANGE_ADDRESS, name: "Neg Risk CTF Exchange" },
+  { address: CTF_EXCHANGE_ADDRESS, name: "CTF Exchange V1" },
+  { address: NEG_RISK_CTF_EXCHANGE_ADDRESS, name: "Neg Risk CTF Exchange V1" },
+  { address: CTF_EXCHANGE_ADDRESS_V2, name: "CTF Exchange V2" },
+  { address: NEG_RISK_CTF_EXCHANGE_ADDRESS_V2, name: "Neg Risk CTF Exchange V2" },
+] as const;
+
+// pUSD spenders (V2 collateral)
+const PUSD_SPENDERS = [
+  { address: CTF_CONTRACT_ADDRESS, name: "CTF Contract" },
+  { address: NEG_RISK_ADAPTER_ADDRESS, name: "Neg Risk Adapter" },
+  { address: CTF_EXCHANGE_ADDRESS_V2, name: "CTF Exchange V2" },
+  { address: NEG_RISK_CTF_EXCHANGE_ADDRESS_V2, name: "Neg Risk CTF Exchange V2" },
 ] as const;
 
 const OUTCOME_TOKEN_SPENDERS = [
-  { address: CTF_EXCHANGE_ADDRESS, name: "CTF Exchange" },
-  { address: NEG_RISK_CTF_EXCHANGE_ADDRESS, name: "Neg Risk Exchange" },
+  { address: CTF_EXCHANGE_ADDRESS, name: "CTF Exchange V1" },
+  { address: NEG_RISK_CTF_EXCHANGE_ADDRESS, name: "Neg Risk Exchange V1" },
+  { address: CTF_EXCHANGE_ADDRESS_V2, name: "CTF Exchange V2" },
+  { address: NEG_RISK_CTF_EXCHANGE_ADDRESS_V2, name: "Neg Risk Exchange V2" },
   { address: NEG_RISK_ADAPTER_ADDRESS, name: "Neg Risk Adapter" },
 ] as const;
 
@@ -96,41 +111,58 @@ const checkERC1155ApprovalForSpender = async (
   }
 };
 
+const checkPUSDApprovalForSpender = async (
+  safeAddress: string,
+  spender: string
+): Promise<boolean> => {
+  try {
+    const allowance = await publicClient.readContract({
+      address: PUSD_CONTRACT_ADDRESS as `0x${string}`,
+      abi: erc20Abi,
+      functionName: "allowance",
+      args: [safeAddress as `0x${string}`, spender as `0x${string}`],
+    });
+    const threshold = BigInt("1000000000000");
+    return allowance >= threshold;
+  } catch (error) {
+    console.warn(`Failed to check pUSD approval for ${spender}:`, error);
+    return false;
+  }
+};
+
 export const checkAllApprovals = async (
   safeAddress: string
 ): Promise<{
   allApproved: boolean;
   usdcApprovals: Record<string, boolean>;
+  pusdApprovals: Record<string, boolean>;
   outcomeTokenApprovals: Record<string, boolean>;
 }> => {
   const usdcApprovals: Record<string, boolean> = {};
+  const pusdApprovals: Record<string, boolean> = {};
   const outcomeTokenApprovals: Record<string, boolean> = {};
 
-  await Promise.all(
-    USDC_E_SPENDERS.map(async ({ address, name }) => {
-      usdcApprovals[name] = await checkUSDCApprovalForSpender(
-        safeAddress,
-        address
-      );
-    })
-  );
-
-  await Promise.all(
-    OUTCOME_TOKEN_SPENDERS.map(async ({ address, name }) => {
-      outcomeTokenApprovals[name] = await checkERC1155ApprovalForSpender(
-        safeAddress,
-        address
-      );
-    })
-  );
+  await Promise.all([
+    ...USDC_E_SPENDERS.map(async ({ address, name }) => {
+      usdcApprovals[name] = await checkUSDCApprovalForSpender(safeAddress, address);
+    }),
+    ...PUSD_SPENDERS.map(async ({ address, name }) => {
+      pusdApprovals[name] = await checkPUSDApprovalForSpender(safeAddress, address);
+    }),
+    ...OUTCOME_TOKEN_SPENDERS.map(async ({ address, name }) => {
+      outcomeTokenApprovals[name] = await checkERC1155ApprovalForSpender(safeAddress, address);
+    }),
+  ]);
 
   const allApproved =
     Object.values(usdcApprovals).every((approved) => approved) &&
+    Object.values(pusdApprovals).every((approved) => approved) &&
     Object.values(outcomeTokenApprovals).every((approved) => approved);
 
   return {
     allApproved,
     usdcApprovals,
+    pusdApprovals,
     outcomeTokenApprovals,
   };
 };
@@ -138,6 +170,7 @@ export const checkAllApprovals = async (
 export const createAllApprovalTxs = (): SafeTransaction[] => {
   const safeTxns: SafeTransaction[] = [];
 
+  // USDC.e approvals
   for (const { address } of USDC_E_SPENDERS) {
     safeTxns.push({
       to: USDC_E_CONTRACT_ADDRESS,
@@ -151,6 +184,21 @@ export const createAllApprovalTxs = (): SafeTransaction[] => {
     });
   }
 
+  // pUSD approvals (V2 collateral)
+  for (const { address } of PUSD_SPENDERS) {
+    safeTxns.push({
+      to: PUSD_CONTRACT_ADDRESS,
+      operation: OperationType.Call,
+      data: encodeFunctionData({
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [address as `0x${string}`, BigInt(MAX_UINT256)],
+      }),
+      value: "0",
+    });
+  }
+
+  // Outcome token (ERC1155) approvals
   for (const { address } of OUTCOME_TOKEN_SPENDERS) {
     safeTxns.push({
       to: CTF_CONTRACT_ADDRESS,

@@ -13,7 +13,7 @@ import OrderTypeToggle from "@/components/Trading/OrderModal/OrderTypeToggle";
 import { cn } from "@/utils/classNames";
 import { SUCCESS_STYLES } from "@/constants/ui";
 import { MIN_ORDER_SIZE } from "@/constants/validation";
-import type { ClobClient } from "@polymarket/clob-client";
+import type { ClobClient } from "@polymarket/clob-client-v2";
 import { isValidSize } from "@/utils/validation";
 
 function getDecimalPlaces(tickSize: number): number {

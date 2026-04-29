@@ -1,7 +1,7 @@
 import { useCallback } from "react";
-import { ClobClient } from "@polymarket/clob-client";
+import { ClobClient, Chain } from "@polymarket/clob-client-v2";
 import { useWallet } from "@/providers/WalletContext";
-import { CLOB_API_URL, POLYGON_CHAIN_ID } from "@/constants/polymarket";
+import { CLOB_API_URL } from "@/constants/polymarket";
 
 export interface UserApiCredentials {
   key: string;
@@ -9,25 +9,20 @@ export interface UserApiCredentials {
   passphrase: string;
 }
 
-// This hook's sole purpose is to derive or create
-// the User API Credentials with a temporary ClobClient
-
 export default function useUserApiCredentials() {
   const { eoaAddress, ethersSigner } = useWallet();
 
-  // Creates temporary clobClient with ethers signer from walletClient
   const createOrDeriveUserApiCredentials =
     useCallback(async (): Promise<UserApiCredentials> => {
       if (!eoaAddress || !ethersSigner) throw new Error("Wallet not connected");
 
-      const tempClient = new ClobClient(
-        CLOB_API_URL,
-        POLYGON_CHAIN_ID,
-        ethersSigner
-      );
+      const tempClient = new ClobClient({
+        host: CLOB_API_URL,
+        chain: Chain.POLYGON,
+        signer: ethersSigner,
+      });
 
       try {
-        // Try to derive existing credentials first (expected to fail for new users)
         const derivedCreds = await tempClient.deriveApiKey().catch(() => null);
 
         if (
@@ -39,7 +34,6 @@ export default function useUserApiCredentials() {
           return derivedCreds;
         }
 
-        // Derive failed (normal for first-time users) — create new credentials
         console.log("Creating new API credentials (first-time setup)...");
         const newCreds = await tempClient.createApiKey();
         console.log("API credentials created successfully");

@@ -10,9 +10,12 @@ export const POLYMARKET_PROFILE_URL = (address: string) =>
 export const POLYGON_RPC_URL =
   process.env.NEXT_PUBLIC_POLYGON_RPC_URL || "https://polygon-rpc.com";
 
-// Remote signing endpoint
+// Remote signing endpoint (used by RelayClient for builder HMAC auth)
 export const REMOTE_SIGNING_URL = () =>
   typeof window !== "undefined"
     ? `${window.location.origin}/api/polymarket/sign`
     : "/api/polymarket/sign";
+
+// Builder code for V2 CLOB order attribution (bytes32, from polymarket.com/settings?tab=builder)
+export const BUILDER_CODE = process.env.NEXT_PUBLIC_BUILDER_CODE || "";
 

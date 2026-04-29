@@ -6,6 +6,7 @@ interface SelectOption<T extends string> {
   value: T;
   label: string;
   color?: string;
+  icon?: string;
 }
 
 interface SelectDropdownProps<T extends string> {
@@ -46,12 +47,14 @@ export default function SelectDropdown<T extends string>({
           className="w-full flex items-center justify-between px-3.5 py-2.5 bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg transition-all cursor-pointer text-left"
         >
           <div className="flex items-center gap-2.5">
-            {selected?.color && (
+            {selected?.icon ? (
+              <img src={selected.icon} alt="" className="w-5 h-5 rounded-full shrink-0" />
+            ) : selected?.color ? (
               <div
                 className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: selected.color }}
               />
-            )}
+            ) : null}
             <span className="text-sm text-white/90">
               {selected?.label || "Select..."}
             </span>
@@ -86,12 +89,14 @@ export default function SelectDropdown<T extends string>({
                     : "text-white/60"
                 }`}
               >
-                {opt.color && (
+                {opt.icon ? (
+                  <img src={opt.icon} alt="" className="w-5 h-5 rounded-full shrink-0" />
+                ) : opt.color ? (
                   <div
                     className="w-3 h-3 rounded-full shrink-0"
                     style={{ backgroundColor: opt.color }}
                   />
-                )}
+                ) : null}
                 <span className="text-sm">{opt.label}</span>
               </button>
             ))}

@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Side, OrderType } from "@polymarket/clob-client";
-import type { ClobClient, UserOrder, UserMarketOrder } from "@polymarket/clob-client";
+import { Side, OrderType } from "@polymarket/clob-client-v2";
+import type { ClobClient, UserOrderV2, UserMarketOrderV2 } from "@polymarket/clob-client-v2";
 
 export type OrderParams = {
   tokenId: string;
@@ -63,11 +63,10 @@ export default function useClobOrder(
             marketAmount = params.size;
           }
 
-          const marketOrder: UserMarketOrder = {
+          const marketOrder: UserMarketOrderV2 = {
             tokenID: params.tokenId,
             amount: marketAmount,
             side,
-            feeRateBps: 0,
           };
 
           response = await clobClient.createAndPostMarketOrder(
@@ -81,14 +80,11 @@ export default function useClobOrder(
             throw new Error("Price required for limit orders");
           }
 
-          const limitOrder: UserOrder = {
+          const limitOrder: UserOrderV2 = {
             tokenID: params.tokenId,
             price: params.price,
             size: params.size,
             side,
-            feeRateBps: 0,
-            expiration: 0,
-            taker: "0x0000000000000000000000000000000000000000",
           };
 
           response = await clobClient.createAndPostOrder(

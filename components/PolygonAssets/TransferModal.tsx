@@ -15,20 +15,37 @@ import { cn } from "@/utils/classNames";
 import { parseUnits } from "viem";
 
 // Chain metadata (same as DepositModal)
-const CHAIN_META: Record<string, { label: string; color: string }> = {
-  "1": { label: "Ethereum", color: "#627EEA" },
-  "137": { label: "Polygon", color: "#8247E5" },
-  "42161": { label: "Arbitrum", color: "#28A0F0" },
-  "10": { label: "Optimism", color: "#FF0420" },
-  "8453": { label: "Base", color: "#0052FF" },
-  "56": { label: "BNB Chain", color: "#F0B90B" },
-  "1151111081099710": { label: "Solana", color: "#9945FF" },
-  "8253038": { label: "Bitcoin", color: "#F7931A" },
-  "728126428": { label: "Tron", color: "#FF0013" },
+const CHAIN_META: Record<string, { label: string; color: string; icon?: string }> = {
+  "1": { label: "Ethereum", color: "#627EEA", icon: "https://assets.coingecko.com/coins/images/279/small/ethereum.png" },
+  "137": { label: "Polygon", color: "#8247E5", icon: "https://assets.coingecko.com/coins/images/4713/small/polygon.png" },
+  "42161": { label: "Arbitrum", color: "#28A0F0", icon: "https://assets.coingecko.com/coins/images/16547/small/arb.jpg" },
+  "10": { label: "Optimism", color: "#FF0420", icon: "https://assets.coingecko.com/coins/images/25244/small/Optimism.png" },
+  "8453": { label: "Base", color: "#0052FF", icon: "https://assets.coingecko.com/asset_platforms/images/131/small/base.jpeg" },
+  "56": { label: "BNB Chain", color: "#F0B90B", icon: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png" },
+  "1151111081099710": { label: "Solana", color: "#9945FF", icon: "https://assets.coingecko.com/coins/images/4128/small/solana.png" },
+  "8253038": { label: "Bitcoin", color: "#F7931A", icon: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png" },
+  "728126428": { label: "Tron", color: "#FF0013", icon: "https://assets.coingecko.com/coins/images/1094/small/tron-logo.png" },
   "999": { label: "HyperEVM", color: "#00D395" },
   "143": { label: "Monad", color: "#836EF9" },
   "2741": { label: "Abstract", color: "#FFFFFF" },
   "5064014": { label: "Ethereal", color: "#A78BFA" },
+};
+
+// Token logo URLs by symbol
+const TOKEN_ICONS: Record<string, string> = {
+  "USDC": "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
+  "USDC.e": "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
+  "USDT": "https://assets.coingecko.com/coins/images/325/small/Tether.png",
+  "ETH": "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+  "WETH": "https://assets.coingecko.com/coins/images/2518/small/weth.png",
+  "DAI": "https://assets.coingecko.com/coins/images/9956/small/Badge_Dai.png",
+  "BTC": "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
+  "WBTC": "https://assets.coingecko.com/coins/images/7598/small/wrapped_bitcoin_wbtc.png",
+  "SOL": "https://assets.coingecko.com/coins/images/4128/small/solana.png",
+  "BNB": "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png",
+  "POL": "https://assets.coingecko.com/coins/images/4713/small/polygon.png",
+  "MATIC": "https://assets.coingecko.com/coins/images/4713/small/polygon.png",
+  "TRX": "https://assets.coingecko.com/coins/images/1094/small/tron-logo.png",
 };
 
 const CHAIN_ORDER = [
@@ -100,7 +117,7 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
     });
     return ids.map((id) => {
       const meta = CHAIN_META[id] || { label: `Chain ${id}`, color: "#888" };
-      return { value: id, label: meta.label, color: meta.color };
+      return { value: id, label: meta.label, color: meta.color, icon: meta.icon };
     });
   }, [chainGroups]);
 
@@ -111,7 +128,7 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
   );
 
   const tokenOptions = useMemo(
-    () => tokensForChain.map((a) => ({ value: a.token.address, label: a.token.symbol })),
+    () => tokensForChain.map((a) => ({ value: a.token.address, label: a.token.symbol, icon: TOKEN_ICONS[a.token.symbol] })),
     [tokensForChain]
   );
 

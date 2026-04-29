@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTrading } from "@/providers/TradingProvider";
-import { Side } from "@polymarket/clob-client";
+import { Side } from "@polymarket/clob-client-v2";
 import type { CategoryId } from "@/constants/categories";
 import { getCategoryById } from "@/constants/categories";
 

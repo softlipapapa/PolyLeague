@@ -6,6 +6,8 @@ import {
   USDC_E_DECIMALS,
   USDC_CONTRACT_ADDRESS,
   USDC_DECIMALS,
+  PUSD_CONTRACT_ADDRESS,
+  PUSD_DECIMALS,
   WETH_CONTRACT_ADDRESS,
   WETH_DECIMALS,
 } from "@/constants/tokens";
@@ -55,7 +57,7 @@ export default function usePolygonBalances(address: string | undefined) {
       const addr = address as `0x${string}`;
 
       // Fetch all balances + prices in parallel
-      const [usdceRaw, usdcRaw, wethRaw, maticRaw, ethPrice, maticPrice] =
+      const [usdceRaw, usdcRaw, pusdRaw, wethRaw, maticRaw, ethPrice, maticPrice] =
         await Promise.all([
           publicClient.readContract({
             address: USDC_E_CONTRACT_ADDRESS,
@@ -65,6 +67,12 @@ export default function usePolygonBalances(address: string | undefined) {
           }),
           publicClient.readContract({
             address: USDC_CONTRACT_ADDRESS,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [addr],
+          }),
+          publicClient.readContract({
+            address: PUSD_CONTRACT_ADDRESS,
             abi: erc20Abi,
             functionName: "balanceOf",
             args: [addr],
@@ -82,10 +90,12 @@ export default function usePolygonBalances(address: string | undefined) {
 
       const usdce = parseFloat(formatUnits(usdceRaw, USDC_E_DECIMALS));
       const usdc = parseFloat(formatUnits(usdcRaw, USDC_DECIMALS));
+      const pusd = parseFloat(formatUnits(pusdRaw, PUSD_DECIMALS));
       const weth = parseFloat(formatUnits(wethRaw, WETH_DECIMALS));
       const matic = parseFloat(formatEther(maticRaw));
 
       const tokens: TokenBalance[] = [
+        { symbol: "pUSD", balance: pusd, formatted: pusd.toFixed(2), usdValue: pusd },
         { symbol: "USDC.e", balance: usdce, formatted: usdce.toFixed(2), usdValue: usdce },
         { symbol: "USDC", balance: usdc, formatted: usdc.toFixed(2), usdValue: usdc },
         { symbol: "WETH", balance: weth, formatted: weth.toFixed(6), usdValue: weth * ethPrice },

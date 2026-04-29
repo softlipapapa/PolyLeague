@@ -40,7 +40,7 @@ export default function useRelayClient() {
       RELAYER_URL,
       POLYGON_CHAIN_ID,
       ethersSigner,
-      builderConfig
+      builderConfig as any
     );
 
     setRelayClient(client);

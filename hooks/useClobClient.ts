@@ -1,18 +1,11 @@
 import { useMemo } from "react";
 import { useWallet } from "@/providers/WalletContext";
-import { ClobClient } from "@polymarket/clob-client";
+import { ClobClient, Chain, SignatureTypeV2 } from "@polymarket/clob-client-v2";
 import useSafeDeployment from "@/hooks/useSafeDeployment";
-import { BuilderConfig } from "@polymarket/builder-signing-sdk";
 
 import { TradingSession } from "@/utils/session";
-import {
-  CLOB_API_URL,
-  POLYGON_CHAIN_ID,
-  REMOTE_SIGNING_URL,
-} from "@/constants/polymarket";
-
-// This hook creates the authenticated clobClient with the User API Credentials
-// and the builder config credentials, but only after a trading session is initialized
+import { CLOB_API_URL } from "@/constants/polymarket";
+import { BUILDER_CODE } from "@/constants/api";
 
 export default function useClobClient(
   tradingSession: TradingSession | null,
@@ -32,25 +25,15 @@ export default function useClobClient(
       return null;
     }
 
-    const builderConfig = new BuilderConfig({
-      remoteBuilderConfig: {
-        url: REMOTE_SIGNING_URL(),
-      },
+    return new ClobClient({
+      host: CLOB_API_URL,
+      chain: Chain.POLYGON,
+      signer: ethersSigner,
+      creds: tradingSession.apiCredentials,
+      signatureType: SignatureTypeV2.POLY_GNOSIS_SAFE,
+      funderAddress: derivedSafeAddressFromEoa,
+      builderConfig: { builderCode: BUILDER_CODE },
     });
-
-    // This is the persisted clobClient instance for creating and posting
-    // orders for the user, with proper builder order attribution
-    return new ClobClient(
-      CLOB_API_URL,
-      POLYGON_CHAIN_ID,
-      ethersSigner,
-      tradingSession.apiCredentials,
-      2, // signatureType = 2 for embedded wallet EOA to sign for Safe proxy wallet
-      derivedSafeAddressFromEoa,
-      undefined, // mandatory placeholder
-      false,
-      builderConfig // Builder order attribution
-    );
   }, [
     eoaAddress,
     ethersSigner,
