@@ -4,6 +4,108 @@ import { GAMMA_API_URL } from "@/constants/api";
 const LOL_TAG_ID = 65; // "league of legends" tag
 const PAGE_SIZE = 20;
 
+const KNOWN_LEAGUES = [
+  "LCK", "LPL", "LEC", "LCS", "LTA", "CBLOL", "LJL", "PCS", "VCS",
+  "LFL", "TCL", "LLA", "LCL", "NACL", "LCK CL", "LDL",
+] as const;
+
+const TEAM_LEAGUE: Record<string, string> = {
+  // LCK
+  "T1": "LCK", "Gen.G": "LCK", "Hanwha Life Esports": "LCK", "Dplus KIA": "LCK",
+  "KT Rolster": "LCK", "DRX": "LCK", "Kwangdong Freecs": "LCK", "Nongshim Red Force": "LCK",
+  "BNK FEARX": "LCK", "BNK FearX": "LCK", "OKSavingsBank BRION": "LCK",
+  "Ninjas in Pyjamas": "LCK", "FOX": "LCK", "ANC": "LCK", "NBS": "LCK",
+  // LCK CL
+  "T1 Academy": "LCK CL", "DRX Challengers": "LCK CL", "KT Rolster Challengers": "LCK CL",
+  "BNK FearX Youth": "LCK CL",
+  // LPL
+  "JD Gaming": "LPL", "Top Esports": "LPL", "Bilibili Gaming": "LPL",
+  "Weibo Gaming": "LPL", "LNG Esports": "LPL", "Invictus Gaming": "LPL",
+  "Royal Never Give Up": "LPL", "OMG": "LPL", "Edward Gaming": "LPL",
+  "FunPlus Phoenix": "LPL", "TES": "LPL", "AL": "LPL", "JDG": "LPL",
+  "GAM Esports": "VCS", "MGN Vikings Esports": "VCS",
+  "DNF.C": "LPL", "BFXY": "LPL", "TES.C": "LPL", "RG": "LPL", "MCN": "LPL",
+  "FN": "LPL", "FSK": "LPL",
+  // LEC
+  "G2 Esports": "LEC", "Fnatic": "LEC", "GIANTX": "LEC", "Movistar KOI": "LEC",
+  "Karmine Corp": "LEC", "SK Gaming": "LEC", "Team Vitality": "LEC",
+  "Team BDS": "LEC", "Rogue": "LEC", "MAD Lions KOI": "LEC", "Movistar": "LEC",
+  // LTA (Americas)
+  "FlyQuest": "LTA", "100 Thieves": "LTA", "Cloud9": "LTA", "Team Liquid": "LTA",
+  "NRG": "LTA", "Dignitas": "LTA", "Immortals": "LTA", "Shopify Rebellion": "LTA",
+  "Vivo Keyd Stars": "LTA", "LOUD": "LTA", "paiN Gaming": "LTA",
+  "FURIA": "LTA", "RED Canids": "LTA", "Isurus": "LTA", "Estral Esports": "LTA",
+  // LFL / EMEA Masters
+  "Gentle Mates": "LFL", "Karmine Corp Blue": "LFL", "Vitality.Bee": "LFL",
+  "GIANTX PRIDE": "LFL", "Los Heretics": "LFL", "Barça eSports": "LFL",
+  "Team Phantasma": "LFL", "Los Ratones": "LFL", "Forsaken": "LFL",
+  "Verdant": "LFL", "ROSSMANN Centaurs": "LFL", "Odivelas Sports Club": "LFL",
+  "Entropiq": "LFL", "Colossal Gaming": "LFL", "eSuba": "LFL",
+  "Misa Esports": "LFL", "StormMedia Fajnie Mieć Skład": "LFL",
+  "Zero Tenacity": "LFL", "Partizan Sangal": "LFL", "GnG Amazigh": "LFL",
+  "Senshi Esports Club": "LFL", "Veni Vidi Vici": "LFL", "Galions": "LFL",
+  "Galions Pearl": "LFL", "G2 HEL": "LFL", "Team Orange Gaming": "LFL",
+  "Rich Gang": "LFL", "FlameHard": "LFL", "NightBirds": "LFL",
+  "Geekay": "LFL", "SPIKE Syndicate": "LFL", "ULF Esports": "LFL",
+  "Unicorns Of Love Sexy Edition": "LFL", "The Otter Side": "LFL",
+  "Gamespace Mediterranean College Esports": "LFL", "Zena Esports": "LFL",
+  "GMBLERS ESPORTS": "LFL", "Team Insidious": "LFL",
+  "Berlin International Gaming": "LFL", "Bushido Wildcats": "LFL",
+  // TCL
+  "Beşiktaş Esports": "TCL", "ZennIT": "TCL",
+  // Abbreviations that appear in short-form titles
+  "USE": "LFL", "SPK": "LFL", "VITB": "LFL", "CZV": "LFL",
+  "VVV": "LFL", "FLH": "LFL",
+};
+
+function cleanLeagueName(raw: string): string {
+  return raw.replace(/\s*(Regular Season|Playoffs|Play-Ins?|Groups?|Finals?)\s*/gi, "").trim();
+}
+
+function inferLeagueFromTeams(teamA: string | null, teamB: string | null): string | null {
+  if (teamA && TEAM_LEAGUE[teamA]) return TEAM_LEAGUE[teamA];
+  if (teamB && TEAM_LEAGUE[teamB]) return TEAM_LEAGUE[teamB];
+  return null;
+}
+
+function parseTitle(title: string): {
+  teamA: string | null;
+  teamB: string | null;
+  bestOf: number | null;
+  league: string | null;
+} {
+  // Format 1: "LoL: Team A vs Team B (BOx) - League Name"
+  let m = title.match(/^LoL:\s*(.+?)\s+vs\.?\s+(.+?)\s*\(BO(\d+)\)\s*-\s*(.+)$/);
+  if (m) {
+    return { teamA: m[1].trim(), teamB: m[2].trim(), bestOf: parseInt(m[3]), league: cleanLeagueName(m[4]) };
+  }
+
+  // Format 2: "League: Team A vs. Team B" (e.g. "LEC: G2 Esports vs. GIANTX")
+  const leaguePrefix = KNOWN_LEAGUES.join("|");
+  m = title.match(new RegExp(`^(${leaguePrefix}):\\s*(.+?)\\s+vs\\.?\\s+(.+?)(?:\\s*\\(BO(\\d+)\\))?$`));
+  if (m) {
+    return { teamA: m[2].trim(), teamB: m[3].trim(), bestOf: m[4] ? parseInt(m[4]) : null, league: m[1].trim() };
+  }
+
+  // Format 3: "LoL: Team A vs Team B (BOx)" — no league
+  m = title.match(/^LoL:\s*(.+?)\s+vs\.?\s+(.+?)\s*\(BO(\d+)\)$/);
+  if (m) {
+    const teamA = m[1].trim();
+    const teamB = m[2].trim();
+    return { teamA, teamB, bestOf: parseInt(m[3]), league: inferLeagueFromTeams(teamA, teamB) };
+  }
+
+  // Format 4: "LoL: Team A vs Team B" — no BO, no league
+  m = title.match(/^LoL:\s*(.+?)\s+vs\.?\s+(.+?)$/);
+  if (m) {
+    const teamA = m[1].trim();
+    const teamB = m[2].trim();
+    return { teamA, teamB, bestOf: null, league: inferLeagueFromTeams(teamA, teamB) };
+  }
+
+  return { teamA: null, teamB: null, bestOf: null, league: null };
+}
+
 function parseEvent(event: any) {
   const markets = (event.markets || []).map((m: any) => ({
     id: m.id,
@@ -26,18 +128,7 @@ function parseEvent(event: any) {
     spread: m.spread,
   }));
 
-  // Extract league from title: "LoL: Team A vs Team B (BOx) - League Name"
-  const titleMatch = event.title.match(
-    /^LoL:\s*(.+?)\s+vs\s+(.+?)\s*\(BO(\d+)\)\s*-\s*(.+)$/
-  );
-
-  const rawLeague = titleMatch ? titleMatch[4].trim() : null;
-  const parsedLeague = rawLeague
-    ? rawLeague.replace(/\s*(Regular Season|Playoffs|Play-Ins?|Groups?|Finals?)\s*/gi, "").trim() || rawLeague
-    : null;
-  const teamA = titleMatch ? titleMatch[1].trim() : null;
-  const teamB = titleMatch ? titleMatch[2].trim() : null;
-  const bestOf = titleMatch ? parseInt(titleMatch[3]) : null;
+  const { teamA, teamB, bestOf, league: parsedLeague } = parseTitle(event.title);
 
   // Find the main match winner market
   const mainMarket = markets.find(

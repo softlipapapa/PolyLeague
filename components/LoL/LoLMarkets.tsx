@@ -10,6 +10,7 @@ import useUserPositions, {
   type PolymarketPosition,
 } from "@/hooks/useUserPositions";
 import useRedeemPosition from "@/hooks/useRedeemPosition";
+import useStreamLinks from "@/hooks/useStreamLinks";
 
 import ErrorState from "@/components/shared/ErrorState";
 import EmptyState from "@/components/shared/EmptyState";
@@ -99,6 +100,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     [events]
   );
   const { data: teamLogos } = useTeamLogos(teamNames);
+  const { getStreamForMatch } = useStreamLinks();
 
   // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -248,6 +250,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
                 onOutcomeClick={handleOutcomeClick}
                 onRedeem={handleRedeem}
                 onConnectPrompt={handleConnectPrompt}
+                streamLink={getStreamForMatch(event.teamA, event.teamB, event.league, event.status)}
               />
             ))}
 
