@@ -3,13 +3,6 @@
 import { useState, useMemo } from "react";
 import type { LoLEvent } from "@/hooks/useLoLMarkets";
 import type { PolymarketPosition } from "@/hooks/useUserPositions";
-import useTopHolders from "@/hooks/useTopHolders";
-import TopHolders from "@/components/LoL/TopHolders";
-import OddsChart from "@/components/LoL/OddsChart";
-import HeadToHead from "@/components/LoL/HeadToHead";
-import TeamInfo from "@/components/LoL/TeamInfo";
-import { usePrefetchHeadToHead } from "@/hooks/useHeadToHead";
-import { usePrefetchTeamInfo } from "@/hooks/useTeamInfo";
 import { formatVolume, formatCurrency, formatShares } from "@/utils/formatting";
 import type { StreamLink } from "@/app/api/stream-links/route";
 
@@ -18,41 +11,29 @@ interface LoLMarketCardProps {
   disabled?: boolean;
   teamLogos: Record<string, string | null>;
   isConnected: boolean;
-  isSessionReady: boolean;
-  isSessionInitializing: boolean;
   positionsByToken: Map<string, PolymarketPosition>;
   isRedeeming: boolean;
   canRedeem: boolean;
-  onOutcomeClick: (
-    marketTitle: string,
-    outcome: string,
-    price: number,
-    tokenId: string,
-    negRisk: boolean
-  ) => void;
+  onCardClick: () => void;
   onRedeem: (position: PolymarketPosition, eventId: string) => void;
-  onConnectPrompt: () => void;
   streamLink?: StreamLink | null;
 }
 
 function TeamLogo({
   teamName,
   logoUrl,
-  size = "md",
 }: {
   teamName: string;
   logoUrl: string | null;
-  size?: "sm" | "md";
 }) {
   const [imgError, setImgError] = useState(false);
-  const px = size === "sm" ? "w-8 h-8" : "w-10 h-10";
 
   if (logoUrl && !imgError) {
     return (
       <img
         src={logoUrl}
         alt={teamName}
-        className={`${px} object-contain`}
+        className="w-10 h-10 object-contain"
         onError={() => setImgError(true)}
       />
     );
@@ -66,7 +47,7 @@ function TeamLogo({
     .toUpperCase();
 
   return (
-    <div className={`${px} rounded-lg bg-white/5 flex items-center justify-center`}>
+    <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
       <span className="text-[10px] font-bold text-white/40">{initials}</span>
     </div>
   );
@@ -103,31 +84,15 @@ export default function LoLMarketCard({
   disabled = false,
   teamLogos,
   isConnected,
-  isSessionReady,
-  isSessionInitializing,
   positionsByToken,
   isRedeeming,
   canRedeem,
-  onOutcomeClick,
+  onCardClick,
   onRedeem,
-  onConnectPrompt,
   streamLink,
 }: LoLMarketCardProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [holdersExpanded, setHoldersExpanded] = useState(false);
-
   const { mainMarket, teamA, teamB, bestOf, league } = event;
   const status = event.status;
-
-  // Prefetch H2H and team info in background so it's ready when user expands
-  usePrefetchHeadToHead(teamA, teamB);
-  usePrefetchTeamInfo(teamA);
-  usePrefetchTeamInfo(teamB);
-
-  const { data: holdersData, isLoading: holdersLoading } = useTopHolders({
-    conditionId: mainMarket?.conditionId ?? null,
-    enabled: expanded,
-  });
 
   const teamAOdds = mainMarket
     ? parseFloat(mainMarket.outcomePrices[0] || "0")
@@ -159,22 +124,6 @@ export default function LoLMarketCard({
   const redeemablePosition = eventPositions.find(
     (ep) => ep.position.redeemable
   );
-  const canClick = !disabled && mainMarket?.acceptingOrders;
-
-  const handleTeamClick = (teamIndex: 0 | 1) => {
-    if (!canClick) return;
-    if (!isConnected) { onConnectPrompt(); return; }
-    if (!mainMarket) return;
-
-    // Open order modal directly — session init happens at "Place Order"
-    onOutcomeClick(
-      event.title,
-      mainMarket.outcomes[teamIndex],
-      teamIndex === 0 ? teamAOdds : teamBOdds,
-      mainMarket.clobTokenIds[teamIndex],
-      mainMarket.negRisk
-    );
-  };
 
   const isResolved = status === "resolved";
   const winner = event.winner;
@@ -182,7 +131,10 @@ export default function LoLMarketCard({
   const teamBWon = winner === teamB;
 
   return (
-    <div className={`glass group ${isResolved ? "opacity-75" : "glass-hover"}`}>
+    <div
+      className={`glass group cursor-pointer ${isResolved ? "opacity-75" : "glass-hover"}`}
+      onClick={onCardClick}
+    >
       {/* Meta row */}
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <div className="flex items-center gap-2">
@@ -260,19 +212,11 @@ export default function LoLMarketCard({
           {/* Teams row */}
           <div className="flex items-center gap-3 mb-3">
             {/* Team A */}
-            <button
-              onClick={() => handleTeamClick(0)}
-              disabled={!canClick || isResolved}
-              className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
-                isResolved
-                  ? teamAWon
-                    ? "bg-green-500/8 cursor-default"
-                    : "cursor-default opacity-40"
-                  : canClick
-                    ? "cursor-pointer hover:bg-green-500/8 active:scale-[0.98]"
-                    : "cursor-default opacity-60"
-              }`}
-            >
+            <div className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
+              isResolved
+                ? teamAWon ? "bg-green-500/8" : "opacity-40"
+                : "group-hover:bg-green-500/5"
+            }`}>
               <TeamLogo teamName={teamA} logoUrl={teamLogos[teamA] ?? null} />
               <div className="flex-1 text-left min-w-0">
                 <p className={`text-sm font-semibold truncate ${
@@ -295,24 +239,16 @@ export default function LoLMarketCard({
                   {teamAPct}<span className="text-xs text-green-400/40 ml-px">%</span>
                 </span>
               )}
-            </button>
+            </div>
 
             <span className="text-white/10 text-xs font-bold shrink-0">vs</span>
 
             {/* Team B */}
-            <button
-              onClick={() => handleTeamClick(1)}
-              disabled={!canClick || isResolved}
-              className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
-                isResolved
-                  ? teamBWon
-                    ? "bg-green-500/8 cursor-default"
-                    : "cursor-default opacity-40"
-                  : canClick
-                    ? "cursor-pointer hover:bg-red-500/8 active:scale-[0.98]"
-                    : "cursor-default opacity-60"
-              }`}
-            >
+            <div className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
+              isResolved
+                ? teamBWon ? "bg-green-500/8" : "opacity-40"
+                : "group-hover:bg-red-500/5"
+            }`}>
               <TeamLogo teamName={teamB} logoUrl={teamLogos[teamB] ?? null} />
               <div className="flex-1 text-left min-w-0">
                 <p className={`text-sm font-semibold truncate ${
@@ -335,7 +271,7 @@ export default function LoLMarketCard({
                   {teamBPct}<span className="text-xs text-red-400/40 ml-px">%</span>
                 </span>
               )}
-            </button>
+            </div>
           </div>
 
           {/* Odds bar */}
@@ -393,7 +329,10 @@ export default function LoLMarketCard({
           {/* Redeem */}
           {redeemablePosition && (
             <button
-              onClick={() => onRedeem(redeemablePosition.position, event.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRedeem(redeemablePosition.position, event.id);
+              }}
               disabled={isRedeeming || !canRedeem}
               className="w-full mt-3 py-2 text-xs font-semibold rounded-lg transition-all bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -401,88 +340,6 @@ export default function LoLMarketCard({
                 ? "Redeeming..."
                 : `Redeem ${formatCurrency(redeemablePosition.position.currentValue)}`}
             </button>
-          )}
-
-          {/* Prompts */}
-          {!isConnected && (
-            <p className="text-[11px] text-center text-white/20 mt-3">
-              Connect wallet to bet
-            </p>
-          )}
-          {isConnected && !isSessionReady && isSessionInitializing && (
-            <p className="text-[11px] text-center text-purple-400/60 mt-3">
-              Setting up...
-            </p>
-          )}
-
-          {/* Chart & Traders toggle */}
-          <button
-            onClick={() => setExpanded((prev) => !prev)}
-            className="w-full mt-3 pt-3 border-t border-white/5 flex items-center justify-center gap-1.5 cursor-pointer group/expand"
-          >
-            <span className="text-[10px] font-medium text-white/25 group-hover/expand:text-white/40 transition-colors">
-              {expanded ? "Hide Details" : "Chart & Team Info"}
-            </span>
-            <svg
-              className={`w-3 h-3 text-white/20 group-hover/expand:text-white/35 transition-all duration-200 ${expanded ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* Expanded details */}
-          {expanded && (
-            <div className="mt-3 space-y-4">
-              {/* Chart — full width */}
-              <OddsChart
-                tokenId={mainMarket.clobTokenIds[0]}
-                teamName={teamA || mainMarket.outcomes[0]}
-                enabled={expanded}
-              />
-
-              {/* H2H + Team Info: 3-column grid */}
-              {teamA && teamB && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <TeamInfo teamName={teamA} enabled={expanded} />
-                  <HeadToHead teamA={teamA} teamB={teamB} enabled={expanded} />
-                  <TeamInfo teamName={teamB} enabled={expanded} />
-                </div>
-              )}
-
-              {/* Top Holders — collapsible */}
-              <div className="border-t border-white/5 pt-2">
-                <button
-                  onClick={() => setHoldersExpanded((prev) => !prev)}
-                  className="flex items-center gap-1.5 group/holders cursor-pointer"
-                >
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40 group-hover/holders:text-white/55 transition-colors">
-                    Top Traders
-                  </span>
-                  <svg
-                    className={`w-3 h-3 text-white/20 group-hover/holders:text-white/35 transition-all duration-200 ${holdersExpanded ? "rotate-180" : ""}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {holdersExpanded && (
-                  <div className="mt-2">
-                    <TopHolders
-                      data={holdersData || []}
-                      outcomes={mainMarket.outcomes}
-                      isLoading={holdersLoading}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
           )}
         </div>
       ) : (

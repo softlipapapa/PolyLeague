@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWallet } from "@/providers/WalletContext";
 import { useTrading } from "@/providers/TradingProvider";
-import useLoLMarkets, { type MatchStatus } from "@/hooks/useLoLMarkets";
+import useLoLMarkets, { type LoLEvent, type MatchStatus } from "@/hooks/useLoLMarkets";
 import useTeamLogos from "@/hooks/useTeamLogos";
 import useUserPositions, {
   type PolymarketPosition,
@@ -17,6 +17,7 @@ import EmptyState from "@/components/shared/EmptyState";
 import LoadingState from "@/components/shared/LoadingState";
 import LeagueFilter from "@/components/LoL/LeagueFilter";
 import LoLMarketCard from "@/components/LoL/LoLMarketCard";
+import MatchDrawer from "@/components/LoL/MatchDrawer";
 import OrderPlacementModal from "@/components/Trading/OrderModal";
 
 import { createPollingInterval } from "@/utils/polling";
@@ -37,6 +38,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     negRisk: boolean;
   } | null>(null);
   const [redeemingEventId, setRedeemingEventId] = useState<string | null>(null);
+  const [drawerEvent, setDrawerEvent] = useState<LoLEvent | null>(null);
 
   const { eoaAddress } = useWallet();
   const {
@@ -65,24 +67,20 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     status,
   });
 
-  // Flatten pages into single events list
   const events = useMemo(
     () => data?.pages.flatMap((page) => page.events) || [],
     [data]
   );
-  // Cache the full leagues list from the unfiltered response so it doesn't
-  // disappear when a single league is selected
+
   const [allLeagues, setAllLeagues] = useState<string[]>([]);
   const rawLeagues = data?.pages[0]?.leagues;
   useEffect(() => {
-    // Only update when we get a larger or initial list (i.e. "All" is selected)
     if (rawLeagues && rawLeagues.length > allLeagues.length) {
       setAllLeagues(rawLeagues);
     }
   }, [rawLeagues]);
   const leagues = allLeagues;
 
-  // Build a map of tokenId -> position for quick lookup
   const positionsByToken = useMemo(() => {
     const map = new Map<string, PolymarketPosition>();
     if (positions) {
@@ -93,7 +91,6 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     return map;
   }, [positions]);
 
-  // Collect all team names for logo lookup
   const teamNames = useMemo(
     () =>
       events.flatMap((e) => [e.teamA, e.teamB].filter(Boolean) as string[]),
@@ -102,7 +99,6 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
   const { data: teamLogos } = useTeamLogos(teamNames);
   const { getStreamForMatch } = useStreamLinks();
 
-  // Infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = loadMoreRef.current;
@@ -179,12 +175,46 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     [relayClient, redeemPosition, queryClient]
   );
 
+  const handleDrawerTeamClick = useCallback(
+    (teamIndex: 0 | 1) => {
+      if (!drawerEvent?.mainMarket) return;
+      if (!eoaAddress) {
+        handleConnectPrompt();
+        return;
+      }
+      const m = drawerEvent.mainMarket;
+      const price = parseFloat(m.outcomePrices[teamIndex] || "0");
+      handleOutcomeClick(
+        drawerEvent.title,
+        m.outcomes[teamIndex],
+        price,
+        m.clobTokenIds[teamIndex],
+        m.negRisk
+      );
+    },
+    [drawerEvent, eoaAddress, handleOutcomeClick, handleConnectPrompt]
+  );
+
+  const getEventPositions = useCallback(
+    (event: LoLEvent) => {
+      const result: { position: PolymarketPosition; tokenIndex: number }[] = [];
+      if (!event.mainMarket) return result;
+      for (let i = 0; i < event.mainMarket.clobTokenIds.length; i++) {
+        const pos = positionsByToken.get(event.mainMarket.clobTokenIds[i]);
+        if (pos && pos.size > 0.01) {
+          result.push({ position: pos, tokenIndex: i });
+        }
+      }
+      return result;
+    },
+    [positionsByToken]
+  );
+
   const statusLabel = status === "live" ? "Live" : status === "settling" ? "Settling" : status === "resolved" ? "Results" : "Upcoming";
 
   return (
     <>
       <div className="space-y-4">
-        {/* League Filter */}
         {leagues.length > 0 && (
           <LeagueFilter
             leagues={leagues}
@@ -193,7 +223,6 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
           />
         )}
 
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <h3 className="text-sm font-semibold text-white/80">
@@ -208,19 +237,16 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
           </p>
         </div>
 
-        {/* Loading State */}
         {isLoading && (
           <LoadingState
             message={`Loading ${statusLabel.toLowerCase()} matches...`}
           />
         )}
 
-        {/* Error State */}
         {error && !isLoading && (
           <ErrorState error={error} title="Error loading LoL markets" />
         )}
 
-        {/* Empty State */}
         {!isLoading && !error && events.length === 0 && (
           <EmptyState
             title={`No ${statusLabel} Matches`}
@@ -232,7 +258,6 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
           />
         )}
 
-        {/* Match Cards */}
         {!isLoading && !error && events.length > 0 && (
           <div className="space-y-2">
             {events.map((event) => (
@@ -242,19 +267,15 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
                 disabled={isGeoblocked}
                 teamLogos={teamLogos || {}}
                 isConnected={!!eoaAddress}
-                isSessionReady={!!isTradingSessionComplete}
-                isSessionInitializing={isSessionInitializing}
                 positionsByToken={positionsByToken}
                 isRedeeming={isRedeeming && redeemingEventId === event.id}
                 canRedeem={!!relayClient}
-                onOutcomeClick={handleOutcomeClick}
+                onCardClick={() => setDrawerEvent(event)}
                 onRedeem={handleRedeem}
-                onConnectPrompt={handleConnectPrompt}
                 streamLink={getStreamForMatch(event.teamA, event.teamB, event.league, event.status)}
               />
             ))}
 
-            {/* Infinite scroll trigger */}
             <div ref={loadMoreRef} className="h-4" />
 
             {isFetchingNextPage && (
@@ -263,6 +284,20 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
           </div>
         )}
       </div>
+
+      {/* Match Detail Drawer */}
+      {drawerEvent && (
+        <MatchDrawer
+          event={drawerEvent}
+          isOpen={!!drawerEvent}
+          onClose={() => setDrawerEvent(null)}
+          teamLogos={teamLogos || {}}
+          isConnected={!!eoaAddress}
+          streamLink={getStreamForMatch(drawerEvent.teamA, drawerEvent.teamB, drawerEvent.league, drawerEvent.status)}
+          positions={getEventPositions(drawerEvent)}
+          onTeamClick={handleDrawerTeamClick}
+        />
+      )}
 
       {/* Order Placement Modal */}
       {selectedOutcome && (

@@ -82,3 +82,21 @@ body::before {
 ::selection {
   background: rgba(139, 92, 246, 0.3);
 }
+
+/* Modal animation — slide up on mobile, scale in on desktop */
+.modal-animate-in {
+  animation: modalSlideUp 0.25s ease-out;
+}
+@keyframes modalSlideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@media (min-width: 768px) {
+  .modal-animate-in {
+    animation: modalScaleIn 0.2s ease-out;
+  }
+  @keyframes modalScaleIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+}
