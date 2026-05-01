@@ -773,3 +773,32 @@ Write all code comments, git commit messages, and console logs in English.
 - `app/api/lol-markets/route.ts` — multi-format title parser, TEAM_LEAGUE lookup, league inference
 - `components/LoL/LoLMarketCard.tsx` — stream button UI (Twitch/YouTube icon + "Watch"/"Stream" label)
 - `components/LoL/LoLMarkets.tsx` — wired useStreamLinks, passes streamLink to each card
+
+### 2026-04-30 — Match Detail Modal + Order Book
+
+**Done:**
+- Replaced inline card expand with centered MatchDrawer modal
+- 3-column desktop layout (1100px wide, 82vh): Chart | Order Book (260px) | H2H + Team Info (280px)
+- Mobile: full-width slide-up (94vh), stacked single-column with scroll
+- Each column scrolls independently on desktop to minimize page scrolling
+- Order book component: bid/ask bars with size visualization, team selector toggle, 5 price levels, spread/midpoint indicator
+- Simplified LoLMarketCard: whole card clickable (removed expand/collapse, removed inline chart/H2H/TeamInfo/TopHolders)
+- Compact top bar: team bet buttons + match meta (league, BO, volume, stream, position) inline
+- Modal animation: slideUp on mobile, scaleIn on desktop (CSS in globals.css)
+- Fixed Tailwind dynamic class purge bug: replaced template literals (`bg-${color}-500/5`) with explicit conditional classes
+
+**New files:**
+- `components/LoL/MatchDrawer.tsx` — centered modal with 3-column layout
+- `components/LoL/OrderBook.tsx` — order book with bid/ask bars and team selector
+- `app/api/orderbook/route.ts` — CLOB API `/book` proxy with 10s revalidation
+- `hooks/useOrderBook.ts` — React Query hook (10s stale, 15s refetch)
+
+**Updated files:**
+- `components/LoL/LoLMarketCard.tsx` — simplified to clickable card, removed expand logic and chart/H2H/TopHolders imports
+- `components/LoL/LoLMarkets.tsx` — added drawerEvent state, MatchDrawer, handleDrawerTeamClick, getEventPositions
+- `app/globals.css` — added `.modal-animate-in` animation (slideUp mobile, scaleIn desktop)
+
+**Next steps:**
+- Verify modal layout in browser (not yet tested visually)
+- Deploy updated code to production
+- Update leaderboard or consider removing Top Holders from card (now only in modal)
