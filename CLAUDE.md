@@ -822,3 +822,28 @@ Write all code comments, git commit messages, and console logs in English.
 **Next steps:**
 - Deploy updated code to production
 - Test modal on desktop browser
+
+### 2026-05-03 — Deposit Wallet Migration (WIP)
+
+**Context:**
+- Polymarket announced Deposit Wallet system replacing Safe/Proxy flow (live 2026-05-04)
+- New signature type `3` (POLY_1271) using ERC-7739/ERC-1271 validation
+- Migration guide: docs.polymarket.com/trading/deposit-wallet-migration
+
+**Done so far:**
+- Updated SDK packages: `@polymarket/builder-relayer-client@0.0.9`, `@polymarket/clob-client-v2@1.0.3-canary.0`
+- Added `DEPOSIT_WALLET_FACTORY` constant
+- Created `hooks/useDepositWallet.ts` (replaces `useSafeDeployment.ts`):
+  - `deriveDepositWalletAddress()` via `relayClient.deriveDepositWalletAddress()`
+  - `isWalletDeployed()` — checks via relayer then RPC fallback
+  - `deployDepositWallet()` — `relayClient.deployDepositWallet()` + poll until mined
+
+**Still TODO (migration incomplete, trading currently broken):**
+- Rewrite `useTokenApprovals.ts` — use `relayClient.executeDepositWalletBatch()` for approvals
+- Update `useClobClient.ts` — `SignatureTypeV2.POLY_1271`, funder = deposit wallet address
+- Rewrite `useTradingSession.ts` — replace Safe phases with deposit wallet phases
+- Update `utils/session.ts` — session interface: `depositWalletAddress` instead of `safeAddress`
+- Update `TradingProvider.tsx` — wire new hooks, expose `depositWalletAddress`
+- Update balance sync calls to use `signature_type=3`
+- Remove old `hooks/useSafeDeployment.ts` once migration complete
+- Build verify + end-to-end test
