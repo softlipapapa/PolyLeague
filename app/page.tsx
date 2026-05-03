@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import SessionSetupModal from "@/components/SessionSetupModal";
 import MarketTabs from "@/components/Trading/MarketTabs";
 import GeoBlockedBanner from "@/components/GeoBlockedBanner";
+import MobileBanner from "@/components/shared/MobileBanner";
 
 export default function Home() {
   const {
@@ -52,6 +53,7 @@ export default function Home() {
 
   return (
     <div className="px-4 sm:px-6 py-6 min-h-screen flex flex-col gap-5 max-w-4xl mx-auto">
+      <MobileBanner />
       <Header onEndSession={endTradingSession} />
 
       {/* Show geoblock banner if user is in blocked region */}

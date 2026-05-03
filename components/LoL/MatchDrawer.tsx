@@ -183,12 +183,12 @@ export default function MatchDrawer({
             </div>
           )}
 
-          {/* ─── Content: mobile stacked, desktop 3-col ─── */}
+          {/* ─── Content: mobile stacked, desktop 2-col ─── */}
           <div className="flex-1 overflow-y-auto md:overflow-hidden scrollbar-hide">
             <div className="flex flex-col md:flex-row md:h-full">
 
-              {/* Col 1: Chart */}
-              <div className="md:flex-1 md:min-w-0 md:overflow-y-auto md:scrollbar-hide p-3 md:p-4 md:border-r md:border-white/5">
+              {/* Left: Chart + Order Book */}
+              <div className="md:flex-1 md:min-w-0 md:overflow-y-auto md:scrollbar-hide p-3 md:p-4 md:border-r md:border-white/5 space-y-4">
                 {mainMarket && (
                   <OddsChart
                     tokenId={mainMarket.clobTokenIds[0]}
@@ -196,10 +196,6 @@ export default function MatchDrawer({
                     enabled={isOpen}
                   />
                 )}
-              </div>
-
-              {/* Col 2: Order Book */}
-              <div className="md:w-[260px] shrink-0 md:overflow-y-auto md:scrollbar-hide p-3 md:p-4 border-t md:border-t-0 md:border-r md:border-white/5">
                 {mainMarket && (
                   <OrderBook
                     tokenIds={mainMarket.clobTokenIds}
@@ -209,15 +205,15 @@ export default function MatchDrawer({
                 )}
               </div>
 
-              {/* Col 3: H2H + Team Info */}
-              <div className="md:w-[280px] shrink-0 md:overflow-y-auto md:scrollbar-hide p-3 md:p-4 border-t md:border-t-0 border-white/5 space-y-3">
+              {/* Right: H2H + Team Info */}
+              <div className="md:w-80 shrink-0 md:overflow-y-auto md:scrollbar-hide p-3 md:p-4 border-t md:border-t-0 border-white/5 space-y-5">
                 {teamA && teamB && (
                   <HeadToHead teamA={teamA} teamB={teamB} enabled={isOpen} />
                 )}
                 {teamA && teamB && (
-                  <div className="space-y-3 pt-2 border-t border-white/5">
+                  <div className="space-y-3 pt-4 border-t border-white/5">
                     <TeamInfo teamName={teamA} enabled={isOpen} />
-                    <div className="border-t border-white/5 pt-2">
+                    <div className="border-t border-white/5 pt-3">
                       <TeamInfo teamName={teamB} enabled={isOpen} />
                     </div>
                   </div>
