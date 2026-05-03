@@ -802,3 +802,23 @@ Write all code comments, git commit messages, and console logs in English.
 - Verify modal layout in browser (not yet tested visually)
 - Deploy updated code to production
 - Update leaderboard or consider removing Top Holders from card (now only in modal)
+
+### 2026-05-03 — Mobile Banner + Modal 2-Column Layout + Spacing Fix
+
+**Done:**
+- Added MobileBanner: dismissible notice on mobile telling users desktop is recommended (sessionStorage persists dismiss)
+- Changed MatchDrawer from 3-column to 2-column layout per user feedback:
+  - Left: Chart + Order Book (can place bets)
+  - Right (320px/w-80): H2H + Team Info
+- Increased spacing between H2H and Team Info sections (space-y-5, pt-4/pt-3) for better readability
+
+**New files:**
+- `components/shared/MobileBanner.tsx` — dismissible mobile-only banner (md:hidden)
+
+**Updated files:**
+- `app/page.tsx` — added MobileBanner at top of page
+- `components/LoL/MatchDrawer.tsx` — 2-col layout, wider right panel, increased spacing
+
+**Next steps:**
+- Deploy updated code to production
+- Test modal on desktop browser
