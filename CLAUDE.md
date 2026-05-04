@@ -823,27 +823,47 @@ Write all code comments, git commit messages, and console logs in English.
 - Deploy updated code to production
 - Test modal on desktop browser
 
-### 2026-05-03 — Deposit Wallet Migration (WIP)
+### 2026-05-03 — Deposit Wallet Migration (Complete) + Chart Team Toggle
 
 **Context:**
-- Polymarket announced Deposit Wallet system replacing Safe/Proxy flow (live 2026-05-04)
+- Polymarket replacing Safe/Proxy flow with Deposit Wallet system (live 2026-05-04 12:30 UTC)
 - New signature type `3` (POLY_1271) using ERC-7739/ERC-1271 validation
 - Migration guide: docs.polymarket.com/trading/deposit-wallet-migration
 
-**Done so far:**
+**Done (migration):**
 - Updated SDK packages: `@polymarket/builder-relayer-client@0.0.9`, `@polymarket/clob-client-v2@1.0.3-canary.0`
-- Added `DEPOSIT_WALLET_FACTORY` constant
-- Created `hooks/useDepositWallet.ts` (replaces `useSafeDeployment.ts`):
-  - `deriveDepositWalletAddress()` via `relayClient.deriveDepositWalletAddress()`
-  - `isWalletDeployed()` — checks via relayer then RPC fallback
-  - `deployDepositWallet()` — `relayClient.deployDepositWallet()` + poll until mined
+- Created `hooks/useDepositWallet.ts`: derive, check, deploy deposit wallet
+- Rewrote `utils/session.ts`: `safeAddress` → `depositWalletAddress`, `isSafeDeployed` → `isWalletDeployed`
+- Rewrote `utils/approvals.ts`: `createAllApprovalCalls()` returns `DepositWalletCall[]` (was `SafeTransaction[]`)
+- Rewrote `utils/transfer.ts` + `utils/redeem.ts`: same `DepositWalletCall` format
+- Updated `hooks/useTokenApprovals.ts`: uses `executeDepositWalletBatch()` with wallet address + deadline
+- Updated `hooks/useClobClient.ts`: `SignatureTypeV2.POLY_1271`, funder = deposit wallet address
+- Rewrote `hooks/useTradingSession.ts`: `useDepositWallet` replaces `useSafeDeployment`, two-phase flow preserved
+- Updated `hooks/useUsdcTransfer.ts` + `hooks/useRedeemPosition.ts`: `executeDepositWalletBatch()`, takes `walletAddress` param
+- Updated `providers/TradingProvider.tsx`: exposes `depositWalletAddress`, `isWalletDeployed`, `initWalletDeployment`
+- Updated all UI consumers (9 components): `safeAddress` → `depositWalletAddress`, label text updated
+- Deleted `hooks/useSafeDeployment.ts`
+- Build passes clean (27 files changed, +200 -307 lines)
 
-**Still TODO (migration incomplete, trading currently broken):**
-- Rewrite `useTokenApprovals.ts` — use `relayClient.executeDepositWalletBatch()` for approvals
-- Update `useClobClient.ts` — `SignatureTypeV2.POLY_1271`, funder = deposit wallet address
-- Rewrite `useTradingSession.ts` — replace Safe phases with deposit wallet phases
-- Update `utils/session.ts` — session interface: `depositWalletAddress` instead of `safeAddress`
-- Update `TradingProvider.tsx` — wire new hooks, expose `depositWalletAddress`
-- Update balance sync calls to use `signature_type=3`
-- Remove old `hooks/useSafeDeployment.ts` once migration complete
-- Build verify + end-to-end test
+**Done (chart toggle):**
+- OddsChart now accepts both token IDs and team names
+- Team toggle buttons above the chart let users switch between Team A and Team B price history
+- Selected team highlighted with green/red color
+
+**Files changed (27):**
+- `utils/session.ts`, `utils/approvals.ts`, `utils/transfer.ts`, `utils/redeem.ts`
+- `hooks/useClobClient.ts`, `hooks/useTokenApprovals.ts`, `hooks/useTradingSession.ts`
+- `hooks/useUsdcTransfer.ts`, `hooks/useRedeemPosition.ts`, `hooks/useDeposit.ts`, `hooks/useRelayClient.ts`
+- `providers/TradingProvider.tsx`
+- `components/Header/WalletInfo.tsx`, `components/DepositModal.tsx`, `components/SessionSetupModal.tsx`
+- `components/LoL/LoLMarkets.tsx`, `components/LoL/MatchDrawer.tsx`, `components/LoL/OddsChart.tsx`
+- `components/PolygonAssets/index.tsx`, `components/PolygonAssets/TransferModal.tsx`
+- `components/Trading/Orders/index.tsx`, `components/Trading/Positions/index.tsx`
+- `components/TradingSession/SessionInfo.tsx`, `components/TradingSession/SessionProgress.tsx`, `components/TradingSession/SessionSuccess.tsx`
+- `app/page.tsx`
+- Deleted: `hooks/useSafeDeployment.ts`
+
+**Next steps:**
+- Clear browser localStorage (old sessions have `safeAddress` field)
+- End-to-end test: connect → deposit wallet deploys → place order
+- Deploy to production before 2026-05-04 12:30 UTC cutover
