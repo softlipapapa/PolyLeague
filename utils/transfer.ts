@@ -1,7 +1,4 @@
-import {
-  OperationType,
-  SafeTransaction,
-} from "@polymarket/builder-relayer-client";
+import { DepositWalletCall } from "@polymarket/builder-relayer-client";
 import { encodeFunctionData, erc20Abi } from "viem";
 import { USDC_E_CONTRACT_ADDRESS } from "@/constants/tokens";
 
@@ -10,9 +7,9 @@ export interface TransferParams {
   amount: bigint;
 }
 
-export const createUsdcTransferTx = (
+export const createUsdcTransferCall = (
   params: TransferParams
-): SafeTransaction => {
+): DepositWalletCall => {
   const { recipient, amount } = params;
 
   const data = encodeFunctionData({
@@ -22,9 +19,8 @@ export const createUsdcTransferTx = (
   });
 
   return {
-    to: USDC_E_CONTRACT_ADDRESS,
-    operation: OperationType.Call,
-    data,
+    target: USDC_E_CONTRACT_ADDRESS,
     value: "0",
+    data,
   };
 };

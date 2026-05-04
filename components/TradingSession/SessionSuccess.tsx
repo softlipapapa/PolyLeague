@@ -10,7 +10,7 @@ export default function SessionSuccess({
       <p className="font-medium mb-2">Ready to Trade</p>
       <div className="text-xs leading-relaxed text-gray-400 space-y-1">
         <ul className="space-y-1 ml-4 list-disc">
-          <li>Safe deployed at: {session.safeAddress}</li>
+          <li>Deposit wallet at: {session.depositWalletAddress}</li>
           <li>
             User's API credentials created / derived, and stored in session
           </li>

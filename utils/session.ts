@@ -1,7 +1,7 @@
 export interface TradingSession {
   eoaAddress: string;
-  safeAddress: string;
-  isSafeDeployed: boolean;
+  depositWalletAddress: string;
+  isWalletDeployed: boolean;
   hasApiCredentials: boolean;
   hasApprovals: boolean;
   apiCredentials?: {
@@ -16,7 +16,7 @@ export type SessionStep =
   | "idle"
   | "checking"
   | "deploying"
-  | "safe-complete"
+  | "wallet-complete"
   | "credentials"
   | "approvals"
   | "complete";

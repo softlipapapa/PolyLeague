@@ -88,9 +88,9 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
   const [bridgeTxs, setBridgeTxs] = useState<DepositTransaction[]>([]);
   const [pollingInterval, setPollingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
-  const { relayClient, safeAddress } = useTrading();
+  const { relayClient, depositWalletAddress } = useTrading();
   const { isTransferring, error: transferError, transferUsdc } = useUsdcTransfer();
-  const { formattedUsdcBalance, rawUsdcBalance } = usePolygonBalances(safeAddress);
+  const { formattedUsdcBalance, rawUsdcBalance } = usePolygonBalances(depositWalletAddress);
   const { data: assets, isLoading: assetsLoading } = useSupportedAssets();
 
   const isPolygonDirect = selectedChainId === "137";
@@ -198,10 +198,10 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
 
   // Direct Polygon transfer (same as before)
   const handleDirectTransfer = async () => {
-    if (!relayClient || !recipient || !amount) return;
+    if (!relayClient || !depositWalletAddress || !recipient || !amount) return;
     try {
       const amountBigInt = parseUnits(amount, USDC_E_DECIMALS);
-      await transferUsdc(relayClient, {
+      await transferUsdc(relayClient, depositWalletAddress, {
         recipient: recipient as `0x${string}`,
         amount: amountBigInt,
       });
@@ -214,7 +214,7 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
 
   // Cross-chain withdraw via Bridge API
   const handleBridgeWithdraw = async () => {
-    if (!relayClient || !safeAddress || !recipient || !amount) return;
+    if (!relayClient || !depositWalletAddress || !recipient || !amount) return;
     setIsBridgeWithdrawing(true);
     setWithdrawError(null);
 
@@ -224,7 +224,7 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          address: safeAddress,
+          address: depositWalletAddress,
           toChainId: selectedChainId,
           toTokenAddress: selectedTokenAddr,
           recipientAddr: recipient,
@@ -245,7 +245,7 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
 
       // Step 2: Send USDC.e to the withdrawal address on Polygon
       const amountBigInt = parseUnits(amount, USDC_E_DECIMALS);
-      await transferUsdc(relayClient, {
+      await transferUsdc(relayClient, depositWalletAddress!, {
         recipient: withdrawAddress as `0x${string}`,
         amount: amountBigInt,
       });

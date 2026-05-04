@@ -71,7 +71,7 @@ export function useSupportedAssets() {
 }
 
 // Main deposit hook
-export function useDeposit(safeAddress: string | undefined) {
+export function useDeposit(walletAddress: string | undefined) {
   const [depositAddresses, setDepositAddresses] =
     useState<DepositAddresses | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -80,9 +80,9 @@ export function useDeposit(safeAddress: string | undefined) {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [transactions, setTransactions] = useState<DepositTransaction[]>([]);
 
-  // Generate deposit addresses for the Safe wallet
+  // Generate deposit addresses for the deposit wallet
   const generateDepositAddresses = useCallback(async () => {
-    if (!safeAddress) return;
+    if (!walletAddress) return;
     setIsGenerating(true);
     setError(null);
 
@@ -90,7 +90,7 @@ export function useDeposit(safeAddress: string | undefined) {
       const res = await fetch("/api/bridge?action=deposit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: safeAddress }),
+        body: JSON.stringify({ address: walletAddress }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -103,7 +103,7 @@ export function useDeposit(safeAddress: string | undefined) {
     } finally {
       setIsGenerating(false);
     }
-  }, [safeAddress]);
+  }, [walletAddress]);
 
   // Poll deposit status
   const startPolling = useCallback(
@@ -161,14 +161,14 @@ export function useDeposit(safeAddress: string | undefined) {
       fromChainId: string;
       fromTokenAddress: string;
     }): Promise<QuoteResult | null> => {
-      if (!safeAddress) return null;
+      if (!walletAddress) return null;
       try {
         const res = await fetch("/api/bridge?action=quote", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...params,
-            recipientAddress: safeAddress,
+            recipientAddress: walletAddress,
             toChainId: "137",
             toTokenAddress: "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB", // pUSD
           }),
@@ -179,7 +179,7 @@ export function useDeposit(safeAddress: string | undefined) {
         return null;
       }
     },
-    [safeAddress]
+    [walletAddress]
   );
 
   return {

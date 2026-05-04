@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useWallet } from "@/providers/WalletContext";
-import useSafeDeployment from "@/hooks/useSafeDeployment";
+import { useTrading } from "@/providers/TradingProvider";
 import usePolygonBalances from "@/hooks/usePolygonBalances";
 
 import TransferModal from "@/components/PolygonAssets/TransferModal";
@@ -10,13 +9,12 @@ import TransferModal from "@/components/PolygonAssets/TransferModal";
 export default function PolygonAssets() {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
-  const { eoaAddress } = useWallet();
-  const { derivedSafeAddressFromEoa } = useSafeDeployment(eoaAddress);
+  const { depositWalletAddress } = useTrading();
   const { tokens, formattedTotal, isLoading, isError } = usePolygonBalances(
-    derivedSafeAddressFromEoa
+    depositWalletAddress
   );
 
-  if (!derivedSafeAddressFromEoa) {
+  if (!depositWalletAddress) {
     return null;
   }
 

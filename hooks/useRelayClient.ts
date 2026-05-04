@@ -32,7 +32,7 @@ export default function useRelayClient() {
       },
     });
 
-    // The relayClient instance is used for deploying the Safe,
+    // The relayClient instance is used for deploying the deposit wallet,
     // setting token approvals, and executing CTF operations such
     // as splitting, merging, and redeeming positions.
 

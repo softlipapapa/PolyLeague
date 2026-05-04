@@ -68,17 +68,21 @@ function CustomTooltip({ active, payload }: any) {
 }
 
 interface OddsChartProps {
-  tokenId: string;
-  teamName: string;
+  tokenIds: [string, string];
+  teamNames: [string, string];
   enabled?: boolean;
 }
 
 export default function OddsChart({
-  tokenId,
-  teamName,
+  tokenIds,
+  teamNames,
   enabled = true,
 }: OddsChartProps) {
   const [interval, setInterval] = useState<Interval>("1d");
+  const [selectedTeam, setSelectedTeam] = useState<0 | 1>(0);
+
+  const tokenId = tokenIds[selectedTeam];
+  const teamName = teamNames[selectedTeam];
 
   const { data: history, isLoading } = usePriceHistory({
     tokenId,
@@ -129,9 +133,24 @@ export default function OddsChart({
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
-            {teamName} Odds
-          </span>
+          {/* Team toggle */}
+          <div className="flex rounded-md overflow-hidden border border-white/8">
+            {teamNames.map((name, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedTeam(i as 0 | 1)}
+                className={`px-2 py-0.5 text-[10px] font-semibold transition-colors cursor-pointer truncate max-w-24 ${
+                  selectedTeam === i
+                    ? i === 0
+                      ? "bg-green-500/15 text-green-400"
+                      : "bg-red-500/15 text-red-400"
+                    : "text-white/25 hover:text-white/50"
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
           {priceChange && (
             <span
               className={`text-[10px] font-bold font-data ${

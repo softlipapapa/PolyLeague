@@ -1,7 +1,4 @@
-import {
-  OperationType,
-  SafeTransaction,
-} from "@polymarket/builder-relayer-client";
+import { DepositWalletCall } from "@polymarket/builder-relayer-client";
 import { encodeFunctionData } from "viem";
 import {
   USDC_E_CONTRACT_ADDRESS,
@@ -44,7 +41,7 @@ export interface RedeemParams {
   size?: number;
 }
 
-export const createRedeemTx = (params: RedeemParams): SafeTransaction => {
+export const createRedeemCall = (params: RedeemParams): DepositWalletCall => {
   const { conditionId, outcomeIndex, negativeRisk = false, size = 0 } = params;
 
   if (negativeRisk) {
@@ -53,7 +50,7 @@ export const createRedeemTx = (params: RedeemParams): SafeTransaction => {
     const amounts: bigint[] = [BigInt(0), BigInt(0)];
     amounts[outcomeIndex] = tokenAmount;
 
-    console.log("Creating NegRisk redeem tx:", {
+    console.log("Creating NegRisk redeem call:", {
       conditionId,
       outcomeIndex,
       size,
@@ -68,10 +65,9 @@ export const createRedeemTx = (params: RedeemParams): SafeTransaction => {
     });
 
     return {
-      to: NEG_RISK_ADAPTER_ADDRESS,
-      operation: OperationType.Call,
-      data,
+      target: NEG_RISK_ADAPTER_ADDRESS,
       value: "0",
+      data,
     };
   }
 
@@ -79,7 +75,7 @@ export const createRedeemTx = (params: RedeemParams): SafeTransaction => {
 
   const indexSet = BigInt(1 << outcomeIndex);
 
-  console.log("Creating regular CTF redeem tx:", {
+  console.log("Creating regular CTF redeem call:", {
     conditionId,
     outcomeIndex,
     indexSet: indexSet.toString(),
@@ -97,9 +93,8 @@ export const createRedeemTx = (params: RedeemParams): SafeTransaction => {
   });
 
   return {
-    to: CTF_CONTRACT_ADDRESS,
-    operation: OperationType.Call,
-    data,
+    target: CTF_CONTRACT_ADDRESS,
     value: "0",
+    data,
   };
 };

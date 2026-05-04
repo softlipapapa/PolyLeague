@@ -191,8 +191,8 @@ export default function MatchDrawer({
               <div className="md:flex-1 md:min-w-0 md:overflow-y-auto md:scrollbar-hide p-3 md:p-4 md:border-r md:border-white/5 space-y-4">
                 {mainMarket && (
                   <OddsChart
-                    tokenId={mainMarket.clobTokenIds[0]}
-                    teamName={teamA || mainMarket.outcomes[0]}
+                    tokenIds={mainMarket.clobTokenIds as [string, string]}
+                    teamNames={[teamA || mainMarket.outcomes[0], teamB || mainMarket.outcomes[1]]}
                     enabled={isOpen}
                   />
                 )}

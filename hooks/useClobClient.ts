@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useWallet } from "@/providers/WalletContext";
 import { ClobClient, Chain, SignatureTypeV2 } from "@polymarket/clob-client-v2";
-import useSafeDeployment from "@/hooks/useSafeDeployment";
 
 import { TradingSession } from "@/utils/session";
 import { CLOB_API_URL } from "@/constants/polymarket";
@@ -12,13 +11,12 @@ export default function useClobClient(
   isTradingSessionComplete: boolean | undefined
 ) {
   const { eoaAddress, ethersSigner } = useWallet();
-  const { derivedSafeAddressFromEoa } = useSafeDeployment(eoaAddress);
 
   const clobClient = useMemo(() => {
     if (
       !ethersSigner ||
       !eoaAddress ||
-      !derivedSafeAddressFromEoa ||
+      !tradingSession?.depositWalletAddress ||
       !isTradingSessionComplete ||
       !tradingSession?.apiCredentials
     ) {
@@ -30,14 +28,14 @@ export default function useClobClient(
       chain: Chain.POLYGON,
       signer: ethersSigner,
       creds: tradingSession.apiCredentials,
-      signatureType: SignatureTypeV2.POLY_GNOSIS_SAFE,
-      funderAddress: derivedSafeAddressFromEoa,
+      signatureType: SignatureTypeV2.POLY_1271,
+      funderAddress: tradingSession.depositWalletAddress,
       builderConfig: { builderCode: BUILDER_CODE },
     });
   }, [
     eoaAddress,
     ethersSigner,
-    derivedSafeAddressFromEoa,
+    tradingSession?.depositWalletAddress,
     isTradingSessionComplete,
     tradingSession?.apiCredentials,
   ]);

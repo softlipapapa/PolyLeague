@@ -13,7 +13,7 @@ export default function Home() {
     currentStep,
     sessionError,
     initializeTradingSession,
-    initSafeDeployment,
+    initWalletDeployment,
     endTradingSession,
     isGeoblocked,
     isGeoblockLoading,
@@ -28,7 +28,7 @@ export default function Home() {
       setShowSetupModal(true);
     }
     // Auto-dismiss on success states
-    if (currentStep === "complete" || currentStep === "safe-complete") {
+    if (currentStep === "complete" || currentStep === "wallet-complete") {
       const timer = setTimeout(() => setShowSetupModal(false), 1500);
       return () => clearTimeout(timer);
     }
@@ -41,7 +41,7 @@ export default function Home() {
   const handleRetry = () => {
     // Retry the appropriate phase based on what failed
     if (currentStep === "idle") {
-      initSafeDeployment();
+      initWalletDeployment();
     } else {
       initializeTradingSession();
     }

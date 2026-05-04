@@ -1,8 +1,5 @@
 import { createPublicClient, http, encodeFunctionData, erc20Abi } from "viem";
-import {
-  OperationType,
-  SafeTransaction,
-} from "@polymarket/builder-relayer-client";
+import { DepositWalletCall } from "@polymarket/builder-relayer-client";
 import { polygon } from "viem/chains";
 import {
   USDC_E_CONTRACT_ADDRESS,
@@ -73,7 +70,7 @@ const OUTCOME_TOKEN_SPENDERS = [
 ] as const;
 
 const checkUSDCApprovalForSpender = async (
-  safeAddress: string,
+  walletAddress: string,
   spender: string
 ): Promise<boolean> => {
   try {
@@ -81,7 +78,7 @@ const checkUSDCApprovalForSpender = async (
       address: USDC_E_CONTRACT_ADDRESS as `0x${string}`,
       abi: erc20Abi,
       functionName: "allowance",
-      args: [safeAddress as `0x${string}`, spender as `0x${string}`],
+      args: [walletAddress as `0x${string}`, spender as `0x${string}`],
     });
 
     const threshold = BigInt("1000000000000");
@@ -93,7 +90,7 @@ const checkUSDCApprovalForSpender = async (
 };
 
 const checkERC1155ApprovalForSpender = async (
-  safeAddress: string,
+  walletAddress: string,
   spender: string
 ): Promise<boolean> => {
   try {
@@ -101,7 +98,7 @@ const checkERC1155ApprovalForSpender = async (
       address: CTF_CONTRACT_ADDRESS as `0x${string}`,
       abi: erc1155Abi,
       functionName: "isApprovedForAll",
-      args: [safeAddress as `0x${string}`, spender as `0x${string}`],
+      args: [walletAddress as `0x${string}`, spender as `0x${string}`],
     });
 
     return isApproved;
@@ -112,7 +109,7 @@ const checkERC1155ApprovalForSpender = async (
 };
 
 const checkPUSDApprovalForSpender = async (
-  safeAddress: string,
+  walletAddress: string,
   spender: string
 ): Promise<boolean> => {
   try {
@@ -120,7 +117,7 @@ const checkPUSDApprovalForSpender = async (
       address: PUSD_CONTRACT_ADDRESS as `0x${string}`,
       abi: erc20Abi,
       functionName: "allowance",
-      args: [safeAddress as `0x${string}`, spender as `0x${string}`],
+      args: [walletAddress as `0x${string}`, spender as `0x${string}`],
     });
     const threshold = BigInt("1000000000000");
     return allowance >= threshold;
@@ -131,7 +128,7 @@ const checkPUSDApprovalForSpender = async (
 };
 
 export const checkAllApprovals = async (
-  safeAddress: string
+  walletAddress: string
 ): Promise<{
   allApproved: boolean;
   usdcApprovals: Record<string, boolean>;
@@ -144,13 +141,13 @@ export const checkAllApprovals = async (
 
   await Promise.all([
     ...USDC_E_SPENDERS.map(async ({ address, name }) => {
-      usdcApprovals[name] = await checkUSDCApprovalForSpender(safeAddress, address);
+      usdcApprovals[name] = await checkUSDCApprovalForSpender(walletAddress, address);
     }),
     ...PUSD_SPENDERS.map(async ({ address, name }) => {
-      pusdApprovals[name] = await checkPUSDApprovalForSpender(safeAddress, address);
+      pusdApprovals[name] = await checkPUSDApprovalForSpender(walletAddress, address);
     }),
     ...OUTCOME_TOKEN_SPENDERS.map(async ({ address, name }) => {
-      outcomeTokenApprovals[name] = await checkERC1155ApprovalForSpender(safeAddress, address);
+      outcomeTokenApprovals[name] = await checkERC1155ApprovalForSpender(walletAddress, address);
     }),
   ]);
 
@@ -167,50 +164,44 @@ export const checkAllApprovals = async (
   };
 };
 
-export const createAllApprovalTxs = (): SafeTransaction[] => {
-  const safeTxns: SafeTransaction[] = [];
+export const createAllApprovalCalls = (): DepositWalletCall[] => {
+  const calls: DepositWalletCall[] = [];
 
-  // USDC.e approvals
   for (const { address } of USDC_E_SPENDERS) {
-    safeTxns.push({
-      to: USDC_E_CONTRACT_ADDRESS,
-      operation: OperationType.Call,
+    calls.push({
+      target: USDC_E_CONTRACT_ADDRESS,
+      value: "0",
       data: encodeFunctionData({
         abi: erc20Abi,
         functionName: "approve",
         args: [address as `0x${string}`, BigInt(MAX_UINT256)],
       }),
-      value: "0",
     });
   }
 
-  // pUSD approvals (V2 collateral)
   for (const { address } of PUSD_SPENDERS) {
-    safeTxns.push({
-      to: PUSD_CONTRACT_ADDRESS,
-      operation: OperationType.Call,
+    calls.push({
+      target: PUSD_CONTRACT_ADDRESS,
+      value: "0",
       data: encodeFunctionData({
         abi: erc20Abi,
         functionName: "approve",
         args: [address as `0x${string}`, BigInt(MAX_UINT256)],
       }),
-      value: "0",
     });
   }
 
-  // Outcome token (ERC1155) approvals
   for (const { address } of OUTCOME_TOKEN_SPENDERS) {
-    safeTxns.push({
-      to: CTF_CONTRACT_ADDRESS,
-      operation: OperationType.Call,
+    calls.push({
+      target: CTF_CONTRACT_ADDRESS,
+      value: "0",
       data: encodeFunctionData({
         abi: erc1155Abi,
         functionName: "setApprovalForAll",
         args: [address as `0x${string}`, true],
       }),
-      value: "0",
     });
   }
 
-  return safeTxns;
+  return calls;
 };

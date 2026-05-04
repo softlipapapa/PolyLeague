@@ -1,13 +1,11 @@
 import { useCallback } from "react";
 import { RelayClient } from "@polymarket/builder-relayer-client";
-import { checkAllApprovals, createAllApprovalTxs } from "@/utils/approvals";
-
-// Uses relayClient to set all required token approvals for trading
+import { checkAllApprovals, createAllApprovalCalls } from "@/utils/approvals";
 
 export default function useTokenApprovals() {
-  const checkAllTokenApprovals = useCallback(async (safeAddress: string) => {
+  const checkAllTokenApprovals = useCallback(async (walletAddress: string) => {
     try {
-      return await checkAllApprovals(safeAddress);
+      return await checkAllApprovals(walletAddress);
     } catch (err) {
       const error =
         err instanceof Error ? err : new Error("Failed to check approvals");
@@ -16,12 +14,14 @@ export default function useTokenApprovals() {
   }, []);
 
   const setAllTokenApprovals = useCallback(
-    async (relayClient: RelayClient): Promise<boolean> => {
+    async (relayClient: RelayClient, walletAddress: string): Promise<boolean> => {
       try {
-        const approvalTxs = createAllApprovalTxs();
-        const response = await relayClient.execute(
-          approvalTxs,
-          "Set all token approvals for trading"
+        const calls = createAllApprovalCalls();
+        const deadline = String(Math.floor(Date.now() / 1000) + 3600);
+        const response = await relayClient.executeDepositWalletBatch(
+          calls,
+          walletAddress,
+          deadline
         );
         await response.wait();
         return true;

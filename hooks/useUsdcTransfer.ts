@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { RelayClient } from "@polymarket/builder-relayer-client";
-import { createUsdcTransferTx, TransferParams } from "@/utils/transfer";
+import { createUsdcTransferCall, TransferParams } from "@/utils/transfer";
 
 export default function useUsdcTransfer() {
   const [isTransferring, setIsTransferring] = useState(false);
@@ -9,17 +9,20 @@ export default function useUsdcTransfer() {
   const transferUsdc = useCallback(
     async (
       relayClient: RelayClient,
+      walletAddress: string,
       params: TransferParams
     ): Promise<boolean> => {
       setIsTransferring(true);
       setError(null);
 
       try {
-        const transferTx = createUsdcTransferTx(params);
+        const call = createUsdcTransferCall(params);
+        const deadline = String(Math.floor(Date.now() / 1000) + 3600);
 
-        const response = await relayClient.execute(
-          [transferTx],
-          `Transfer USDC.e to ${params.recipient}`
+        const response = await relayClient.executeDepositWalletBatch(
+          [call],
+          walletAddress,
+          deadline
         );
 
         await response.wait();

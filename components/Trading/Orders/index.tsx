@@ -11,16 +11,16 @@ import LoadingState from "@/components/shared/LoadingState";
 import OrderCard from "@/components/Trading/Orders/OrderCard";
 
 export default function ActiveOrders() {
-  const { clobClient, safeAddress } = useTrading();
+  const { clobClient, depositWalletAddress } = useTrading();
   const {
     data: orders,
     isLoading,
     error,
-  } = useActiveOrders(clobClient, safeAddress as `0x${string}` | undefined);
+  } = useActiveOrders(clobClient, depositWalletAddress as `0x${string}` | undefined);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const { cancelOrder, isSubmitting } = useClobOrder(
     clobClient,
-    safeAddress as `0x${string}` | undefined
+    depositWalletAddress as `0x${string}` | undefined
   );
 
   const handleCancelOrder = async (orderId: string) => {

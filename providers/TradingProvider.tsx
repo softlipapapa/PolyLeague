@@ -6,7 +6,6 @@ import type { RelayClient } from "@polymarket/builder-relayer-client";
 import { useWallet } from "./WalletContext";
 import useClobClient from "@/hooks/useClobClient";
 import useTradingSession from "@/hooks/useTradingSession";
-import useSafeDeployment from "@/hooks/useSafeDeployment";
 import useGeoblock, { GeoblockStatus } from "@/hooks/useGeoblock";
 import { TradingSession, SessionStep } from "@/utils/session";
 
@@ -15,15 +14,15 @@ interface TradingContextType {
   currentStep: SessionStep;
   sessionError: Error | null;
   isTradingSessionComplete: boolean | undefined;
-  isSafeDeployed: boolean;
+  isWalletDeployed: boolean;
   initializeTradingSession: () => Promise<void>;
-  initSafeDeployment: () => Promise<void>;
+  initWalletDeployment: () => Promise<void>;
   initTradingCredentials: () => Promise<void>;
   endTradingSession: () => void;
   clobClient: ClobClient | null;
   relayClient: RelayClient | null;
   eoaAddress: string | undefined;
-  safeAddress: string | undefined;
+  depositWalletAddress: string | undefined;
   isGeoblocked: boolean;
   isGeoblockLoading: boolean;
   geoblockStatus: GeoblockStatus | null;
@@ -39,7 +38,6 @@ export function useTrading() {
 
 export default function TradingProvider({ children }: { children: ReactNode }) {
   const { eoaAddress } = useWallet();
-  const { derivedSafeAddressFromEoa } = useSafeDeployment(eoaAddress);
 
   const {
     isBlocked: isGeoblocked,
@@ -52,9 +50,9 @@ export default function TradingProvider({ children }: { children: ReactNode }) {
     currentStep,
     sessionError,
     isTradingSessionComplete,
-    isSafeDeployed,
+    isWalletDeployed,
     initializeTradingSession: initSession,
-    initSafeDeployment: initSafe,
+    initWalletDeployment: initWallet,
     initTradingCredentials: initCreds,
     endTradingSession,
     relayClient,
@@ -82,9 +80,9 @@ export default function TradingProvider({ children }: { children: ReactNode }) {
     () => geoGuard(initSession)(),
     [geoGuard, initSession]
   );
-  const initSafeDeployment = useCallback(
-    () => geoGuard(initSafe)(),
-    [geoGuard, initSafe]
+  const initWalletDeployment = useCallback(
+    () => geoGuard(initWallet)(),
+    [geoGuard, initWallet]
   );
   const initTradingCredentials = useCallback(
     () => geoGuard(initCreds)(),
@@ -98,15 +96,15 @@ export default function TradingProvider({ children }: { children: ReactNode }) {
         currentStep,
         sessionError,
         isTradingSessionComplete,
-        isSafeDeployed,
+        isWalletDeployed,
         initializeTradingSession,
-        initSafeDeployment,
+        initWalletDeployment,
         initTradingCredentials,
         endTradingSession,
         clobClient,
         relayClient,
         eoaAddress,
-        safeAddress: derivedSafeAddressFromEoa,
+        depositWalletAddress: tradingSession?.depositWalletAddress,
         isGeoblocked,
         isGeoblockLoading,
         geoblockStatus,

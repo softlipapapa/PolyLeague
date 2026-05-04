@@ -48,10 +48,10 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     isTradingSessionComplete,
     initTradingCredentials,
     currentStep,
-    safeAddress,
+    depositWalletAddress,
   } = useTrading();
 
-  const { data: positions } = useUserPositions(safeAddress);
+  const { data: positions } = useUserPositions(depositWalletAddress);
   const { redeemPosition, isRedeeming } = useRedeemPosition();
   const queryClient = useQueryClient();
 
@@ -145,10 +145,10 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
 
   const handleRedeem = useCallback(
     async (position: PolymarketPosition, eventId: string) => {
-      if (!relayClient) return;
+      if (!relayClient || !depositWalletAddress) return;
       setRedeemingEventId(eventId);
       try {
-        await redeemPosition(relayClient, {
+        await redeemPosition(relayClient, depositWalletAddress, {
           conditionId: position.conditionId,
           outcomeIndex: position.outcomeIndex,
           negativeRisk: position.negativeRisk,
@@ -172,7 +172,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
         setRedeemingEventId(null);
       }
     },
-    [relayClient, redeemPosition, queryClient]
+    [relayClient, depositWalletAddress, redeemPosition, queryClient]
   );
 
   const handleDrawerTeamClick = useCallback(

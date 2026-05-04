@@ -87,7 +87,7 @@ function statusColor(status: DepositStatus): string {
 }
 
 export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
-  const { safeAddress } = useTrading();
+  const { depositWalletAddress } = useTrading();
   const { data: assets, isLoading: assetsLoading } = useSupportedAssets();
   const {
     depositAddresses,
@@ -98,7 +98,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
     isPolling,
     startPolling,
     stopPolling,
-  } = useDeposit(safeAddress);
+  } = useDeposit(depositWalletAddress);
 
   const [selectedChainId, setSelectedChainId] = useState<string>("137");
   const [selectedTokenAddr, setSelectedTokenAddr] = useState<string>("");
@@ -158,10 +158,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   // Generate deposit addresses when modal opens
   useEffect(() => {
-    if (isOpen && safeAddress && !depositAddresses && !isGenerating) {
+    if (isOpen && depositWalletAddress && !depositAddresses && !isGenerating) {
       generateDepositAddresses();
     }
-  }, [isOpen, safeAddress, depositAddresses, isGenerating, generateDepositAddresses]);
+  }, [isOpen, depositWalletAddress, depositAddresses, isGenerating, generateDepositAddresses]);
 
   const currentDepositAddress = depositAddresses
     ? getDepositAddressForChain(selectedChainId, depositAddresses)

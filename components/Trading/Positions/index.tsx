@@ -18,13 +18,13 @@ import { DUST_THRESHOLD } from "@/constants/validation";
 import { POLLING_DURATION, POLLING_INTERVAL } from "@/constants/query";
 
 export default function UserPositions() {
-  const { clobClient, relayClient, eoaAddress, safeAddress } = useTrading();
+  const { clobClient, relayClient, eoaAddress, depositWalletAddress } = useTrading();
 
   const {
     data: positions,
     isLoading,
     error,
-  } = useUserPositions(safeAddress as string | undefined);
+  } = useUserPositions(depositWalletAddress as string | undefined);
 
   const [hideDust, setHideDust] = useState(true);
   const [redeemingAsset, setRedeemingAsset] = useState<string | null>(null);
@@ -99,14 +99,14 @@ export default function UserPositions() {
   };
 
   const handleRedeem = async (position: PolymarketPosition) => {
-    if (!relayClient) {
+    if (!relayClient || !depositWalletAddress) {
       alert("Relay client not initialized");
       return;
     }
 
     setRedeemingAsset(position.asset);
     try {
-      await redeemPosition(relayClient, {
+      await redeemPosition(relayClient, depositWalletAddress, {
         conditionId: position.conditionId,
         outcomeIndex: position.outcomeIndex,
         negativeRisk: position.negativeRisk,

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import useRelayClient from "@/hooks/useRelayClient";
 import { useWallet } from "@/providers/WalletContext";
 import useTokenApprovals from "@/hooks/useTokenApprovals";
-import useSafeDeployment from "@/hooks/useSafeDeployment";
+import useDepositWallet from "@/hooks/useDepositWallet";
 import useUserApiCredentials from "@/hooks/useUserApiCredentials";
 
 import {
@@ -12,10 +12,6 @@ import {
   TradingSession,
   SessionStep,
 } from "@/utils/session";
-
-// Two-phase trading session:
-// Phase 1 (on wallet connect): relay client + Safe deployment
-// Phase 2 (on first order): API credentials + token approvals
 
 export default function useTradingSession() {
   const [currentStep, setCurrentStep] = useState<SessionStep>("idle");
@@ -27,8 +23,8 @@ export default function useTradingSession() {
   const { eoaAddress, walletClient, ethersSigner } = useWallet();
   const { createOrDeriveUserApiCredentials } = useUserApiCredentials();
   const { checkAllTokenApprovals, setAllTokenApprovals } = useTokenApprovals();
-  const { derivedSafeAddressFromEoa, isSafeDeployed, deploySafe } =
-    useSafeDeployment(eoaAddress);
+  const { deriveDepositWalletAddress, isWalletDeployed, deployDepositWallet } =
+    useDepositWallet(eoaAddress);
   const { relayClient, initializeRelayClient, clearRelayClient } =
     useRelayClient();
 
@@ -65,37 +61,31 @@ export default function useTradingSession() {
     initializeRelayClient,
   ]);
 
-  // ── Phase 1: Safe deployment (runs on wallet connect) ──
-  const initSafeDeployment = useCallback(async () => {
+  // ── Phase 1: Deposit wallet deployment (runs on wallet connect) ──
+  const initWalletDeployment = useCallback(async () => {
     if (!eoaAddress) throw new Error("Wallet not connected");
 
     setCurrentStep("checking");
     setSessionError(null);
 
     try {
-      // Initialize relay client
       const initializedRelayClient = await initializeRelayClient();
 
-      if (!derivedSafeAddressFromEoa)
-        throw new Error("Failed to derive Safe address");
+      const walletAddress = await deriveDepositWalletAddress(initializedRelayClient);
+      if (!walletAddress) throw new Error("Failed to derive deposit wallet address");
 
-      // Check if Safe is already deployed
-      const isDeployed = await isSafeDeployed(
-        initializedRelayClient,
-        derivedSafeAddressFromEoa
-      );
+      const deployed = await isWalletDeployed(initializedRelayClient, walletAddress);
 
-      if (!isDeployed) {
+      if (!deployed) {
         setCurrentStep("deploying");
-        await deploySafe(initializedRelayClient);
+        await deployDepositWallet(initializedRelayClient);
       }
 
-      // Save partial session (Safe deployed, no credentials yet)
       const existing = loadSession(eoaAddress);
       const newSession: TradingSession = {
         eoaAddress,
-        safeAddress: derivedSafeAddressFromEoa,
-        isSafeDeployed: true,
+        depositWalletAddress: walletAddress,
+        isWalletDeployed: true,
         hasApiCredentials: existing?.hasApiCredentials || false,
         hasApprovals: existing?.hasApprovals || false,
         apiCredentials: existing?.apiCredentials,
@@ -104,40 +94,38 @@ export default function useTradingSession() {
 
       setTradingSession(newSession);
       saveSession(eoaAddress, newSession);
-      setCurrentStep("safe-complete");
+      setCurrentStep("wallet-complete");
 
-      // Auto-dismiss after brief success display
       setTimeout(() => {
         setCurrentStep("idle");
       }, 1500);
     } catch (err) {
-      console.error("Safe deployment error:", err);
+      console.error("Deposit wallet deployment error:", err);
       const error = err instanceof Error ? err : new Error("Unknown error");
       setSessionError(error);
       setCurrentStep("idle");
     }
   }, [
     eoaAddress,
-    derivedSafeAddressFromEoa,
-    isSafeDeployed,
-    deploySafe,
+    deriveDepositWalletAddress,
+    isWalletDeployed,
+    deployDepositWallet,
     initializeRelayClient,
   ]);
 
   // Auto-trigger Phase 1 on wallet connect
   const hasAutoInitRef = useRef(false);
   useEffect(() => {
-    if (!eoaAddress || !ethersSigner || !derivedSafeAddressFromEoa) return;
+    if (!eoaAddress || !ethersSigner) return;
 
     const stored = loadSession(eoaAddress);
-    // Skip if Safe is already deployed or already attempted
-    if (stored?.isSafeDeployed || hasAutoInitRef.current) return;
+    if (stored?.isWalletDeployed || hasAutoInitRef.current) return;
 
     hasAutoInitRef.current = true;
-    initSafeDeployment().catch((err) => {
-      console.error("Auto Safe deployment failed:", err);
+    initWalletDeployment().catch((err) => {
+      console.error("Auto deposit wallet deployment failed:", err);
     });
-  }, [eoaAddress, ethersSigner, derivedSafeAddressFromEoa, initSafeDeployment]);
+  }, [eoaAddress, ethersSigner, initWalletDeployment]);
 
   useEffect(() => {
     hasAutoInitRef.current = false;
@@ -150,17 +138,16 @@ export default function useTradingSession() {
     setSessionError(null);
 
     try {
-      // Ensure relay client is ready
       let activeRelayClient = relayClient;
       if (!activeRelayClient) {
         activeRelayClient = await initializeRelayClient();
       }
 
-      if (!derivedSafeAddressFromEoa)
-        throw new Error("Failed to derive Safe address");
+      const session = loadSession(eoaAddress);
+      const walletAddress = session?.depositWalletAddress;
+      if (!walletAddress) throw new Error("Deposit wallet not deployed yet");
 
       // Get API credentials
-      const session = loadSession(eoaAddress);
       let apiCreds = session?.apiCredentials;
       if (
         !session?.hasApiCredentials ||
@@ -175,22 +162,19 @@ export default function useTradingSession() {
 
       // Token approvals
       setCurrentStep("approvals");
-      const approvalStatus = await checkAllTokenApprovals(
-        derivedSafeAddressFromEoa
-      );
+      const approvalStatus = await checkAllTokenApprovals(walletAddress);
 
       let hasApprovals = false;
       if (approvalStatus.allApproved) {
         hasApprovals = true;
       } else {
-        hasApprovals = await setAllTokenApprovals(activeRelayClient);
+        hasApprovals = await setAllTokenApprovals(activeRelayClient, walletAddress);
       }
 
-      // Save complete session
       const newSession: TradingSession = {
         eoaAddress,
-        safeAddress: derivedSafeAddressFromEoa,
-        isSafeDeployed: true,
+        depositWalletAddress: walletAddress,
+        isWalletDeployed: true,
         hasApiCredentials: true,
         hasApprovals,
         apiCredentials: apiCreds,
@@ -209,18 +193,16 @@ export default function useTradingSession() {
   }, [
     eoaAddress,
     relayClient,
-    derivedSafeAddressFromEoa,
     createOrDeriveUserApiCredentials,
     checkAllTokenApprovals,
     setAllTokenApprovals,
     initializeRelayClient,
   ]);
 
-  // Full init (for retry scenarios)
   const initializeTradingSession = useCallback(async () => {
-    await initSafeDeployment();
+    await initWalletDeployment();
     await initTradingCredentials();
-  }, [initSafeDeployment, initTradingCredentials]);
+  }, [initWalletDeployment, initTradingCredentials]);
 
   const endTradingSession = useCallback(() => {
     if (!eoaAddress) return;
@@ -237,12 +219,12 @@ export default function useTradingSession() {
     currentStep,
     sessionError,
     isTradingSessionComplete:
-      tradingSession?.isSafeDeployed &&
+      tradingSession?.isWalletDeployed &&
       tradingSession?.hasApiCredentials &&
       tradingSession?.hasApprovals,
-    isSafeDeployed: tradingSession?.isSafeDeployed || false,
+    isWalletDeployed: tradingSession?.isWalletDeployed || false,
     initializeTradingSession,
-    initSafeDeployment,
+    initWalletDeployment,
     initTradingCredentials,
     endTradingSession,
     relayClient,

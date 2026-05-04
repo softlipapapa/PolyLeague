@@ -13,7 +13,6 @@ const STEP_CONFIG: Record<
   string,
   { title: string; description: string; stepNumber: number; totalSteps: number }
 > = {
-  // Phase 1: Safe deployment (on wallet connect)
   checking: {
     title: "Checking account",
     description: "Verifying your wallet status...",
@@ -21,15 +20,15 @@ const STEP_CONFIG: Record<
     totalSteps: 2,
   },
   deploying: {
-    title: "Deploying Smart Wallet",
+    title: "Deploying Deposit Wallet",
     description:
-      "A signature is required to deploy your Safe wallet. Please approve the request in your wallet.",
+      "A signature is required to deploy your Deposit Wallet. Please approve the request in your wallet.",
     stepNumber: 2,
     totalSteps: 2,
   },
-  "safe-complete": {
+  "wallet-complete": {
     title: "Wallet ready!",
-    description: "Your Smart Wallet has been set up.",
+    description: "Your Deposit Wallet has been set up.",
     stepNumber: 2,
     totalSteps: 2,
   },
@@ -64,7 +63,7 @@ export default function SessionSetupModal({
 }: SessionSetupModalProps) {
   const config = STEP_CONFIG[currentStep];
   const isActive = !!config || !!error;
-  const isComplete = currentStep === "complete" || currentStep === "safe-complete";
+  const isComplete = currentStep === "complete" || currentStep === "wallet-complete";
 
   if (!isActive) return null;
 

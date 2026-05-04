@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useWallet } from "@/providers/WalletContext";
+import { useTrading } from "@/providers/TradingProvider";
 import useAddressCopy from "@/hooks/useAddressCopy";
-import useSafeDeployment from "@/hooks/useSafeDeployment";
 import usePolygonBalances from "@/hooks/usePolygonBalances";
 import { formatAddress } from "@/utils/formatting";
 import TransferModal from "@/components/PolygonAssets/TransferModal";
@@ -15,12 +15,12 @@ export default function WalletInfo({
   onDisconnect: () => void;
 }) {
   const { eoaAddress } = useWallet();
-  const { derivedSafeAddressFromEoa } = useSafeDeployment(eoaAddress);
-  const { copied: copiedSafe, copyAddress: copySafeAddress } = useAddressCopy(
-    derivedSafeAddressFromEoa || null
+  const { depositWalletAddress } = useTrading();
+  const { copied: copiedWallet, copyAddress: copyWalletAddress } = useAddressCopy(
+    depositWalletAddress || null
   );
   const { formattedTotal, isLoading, isError, tokens } = usePolygonBalances(
-    derivedSafeAddressFromEoa
+    depositWalletAddress
   );
 
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -34,7 +34,7 @@ export default function WalletInfo({
     <>
       <div className="flex items-center gap-1.5">
         {/* Balance display */}
-        {derivedSafeAddressFromEoa && (
+        {depositWalletAddress && (
           <div className="relative">
             <button
               onClick={() => setShowFundingTip(!showFundingTip)}
@@ -97,15 +97,15 @@ export default function WalletInfo({
           </div>
         )}
 
-        {/* Safe address pill */}
-        {derivedSafeAddressFromEoa && (
+        {/* Wallet address pill */}
+        {depositWalletAddress && (
           <button
-            onClick={copySafeAddress}
+            onClick={copyWalletAddress}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/8 border border-white/6 transition-all cursor-pointer group"
           >
             <div className="w-2 h-2 rounded-full bg-green-500" />
             <span className="text-xs font-data text-white/50 group-hover:text-white/80 transition-colors">
-              {copiedSafe ? "Copied!" : formatAddress(derivedSafeAddressFromEoa)}
+              {copiedWallet ? "Copied!" : formatAddress(depositWalletAddress)}
             </span>
           </button>
         )}
