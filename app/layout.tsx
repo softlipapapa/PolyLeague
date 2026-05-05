@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { cn } from "@/utils/classNames";
 import "./globals.css";
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -43,6 +44,7 @@ export default function RootLayout({
         className={cn(inter.variable, jetbrainsMono.variable, "antialiased")}
       >
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
