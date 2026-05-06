@@ -12,9 +12,10 @@ import OrderTypeToggle from "@/components/Trading/OrderModal/OrderTypeToggle";
 
 import { cn } from "@/utils/classNames";
 import { SUCCESS_STYLES } from "@/constants/ui";
-import { MIN_ORDER_SIZE } from "@/constants/validation";
+import { MIN_ORDER_SIZE, MIN_ORDER_DOLLAR } from "@/constants/validation";
 import type { ClobClient } from "@polymarket/clob-client-v2";
 import { isValidSize } from "@/utils/validation";
+import { useToast } from "@/providers/ToastProvider";
 
 function getDecimalPlaces(tickSize: number): number {
   if (tickSize >= 1) return 0;
@@ -63,6 +64,7 @@ export default function OrderPlacementModal({
   const [showSuccess, setShowSuccess] = useState(false);
 
   const { eoaAddress } = useWallet();
+  const { showToast } = useToast();
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -92,12 +94,13 @@ export default function OrderPlacementModal({
   useEffect(() => {
     if (orderId && isOpen) {
       setShowSuccess(true);
+      showToast("Order placed successfully!", "success");
       const timer = setTimeout(() => {
         onClose();
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [orderId, isOpen, onClose]);
+  }, [orderId, isOpen, onClose, showToast]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -128,9 +131,16 @@ export default function OrderPlacementModal({
   const limitPriceNum = parseFloat(limitPrice) || 0;
   const effectivePrice = orderType === "limit" ? limitPriceNum : currentPrice;
 
+  const totalCost = sizeNum * effectivePrice;
+
   const handlePlaceOrder = async () => {
     if (!isValidSize(sizeNum)) {
       setLocalError(`Size must be greater than ${MIN_ORDER_SIZE}`);
+      return;
+    }
+
+    if (totalCost < MIN_ORDER_DOLLAR) {
+      setLocalError(`Minimum order is $${MIN_ORDER_DOLLAR}. Current total: $${totalCost.toFixed(2)}`);
       return;
     }
 
@@ -157,8 +167,13 @@ export default function OrderPlacementModal({
     if (!clobClient) {
       try {
         await onInitTradingCredentials();
-      } catch (err) {
-        console.error("Trading credentials init failed:", err);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Setup failed";
+        if (msg.toLowerCase().includes("geoblock") || msg.toLowerCase().includes("region")) {
+          showToast("Trading is not available in your region", "error");
+        } else {
+          showToast(msg, "error");
+        }
         return;
       }
       // clobClient will be set after credentials complete — user needs to click again
@@ -174,8 +189,15 @@ export default function OrderPlacementModal({
         negRisk,
         isMarketOrder: orderType === "market",
       });
-    } catch (err) {
-      console.error("Error placing order:", err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Order failed";
+      if (msg.includes("min size")) {
+        showToast(`Minimum order is $1`, "error");
+      } else if (msg.includes("insufficient") || msg.includes("balance")) {
+        showToast("Insufficient balance. Deposit funds first.", "error");
+      } else {
+        showToast(msg, "error");
+      }
     }
   };
 
@@ -259,6 +281,13 @@ export default function OrderPlacementModal({
           {/* Order Summary */}
           <OrderSummary size={sizeNum} price={effectivePrice} />
 
+          {/* Min order hint */}
+          {sizeNum > 0 && totalCost < MIN_ORDER_DOLLAR && (
+            <p className="text-[11px] text-amber-400/60 mb-2 text-center">
+              Min order $1 — need {Math.ceil(MIN_ORDER_DOLLAR / effectivePrice)} shares at {Math.round(effectivePrice * 100)}¢
+            </p>
+          )}
+
           {/* Place Order Button */}
           <button
             onClick={handlePlaceOrder}
@@ -269,9 +298,7 @@ export default function OrderPlacementModal({
               ? "Placing Order..."
               : isSessionInitializing
                 ? "Setting up..."
-                : !clobClient
-                  ? "Place Order"
-                  : "Place Order"}
+                : "Place Order"}
           </button>
         </div>
       </div>

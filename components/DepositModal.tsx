@@ -255,10 +255,15 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 />
               )}
 
-              {/* Min deposit */}
+              {/* Min deposit warning */}
               {selectedToken && (
-                <div className="mb-4 text-[11px] text-white/30">
-                  Min deposit: ${selectedToken.minCheckoutUsd} USD
+                <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                  <p className="text-xs text-amber-300/90 font-medium">
+                    Minimum deposit: ${selectedToken.minCheckoutUsd} USD
+                  </p>
+                  <p className="text-[10px] text-amber-300/50 mt-0.5">
+                    Deposits below this amount will not be processed
+                  </p>
                 </div>
               )}
 

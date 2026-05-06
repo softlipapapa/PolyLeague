@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@/providers/WalletContext";
 import { useTrading } from "@/providers/TradingProvider";
 import useAddressCopy from "@/hooks/useAddressCopy";
@@ -8,6 +8,8 @@ import usePolygonBalances from "@/hooks/usePolygonBalances";
 import { formatAddress } from "@/utils/formatting";
 import TransferModal from "@/components/PolygonAssets/TransferModal";
 import DepositModal from "@/components/DepositModal";
+
+const TOOLTIP_DISMISSED_KEY = "riftmarket_deposit_tooltip_dismissed";
 
 export default function WalletInfo({
   onDisconnect,
@@ -19,22 +21,36 @@ export default function WalletInfo({
   const { copied: copiedWallet, copyAddress: copyWalletAddress } = useAddressCopy(
     depositWalletAddress || null
   );
-  const { formattedTotal, isLoading, isError, tokens } = usePolygonBalances(
-    depositWalletAddress
-  );
+  const {
+    formattedTradingTotal,
+    tradingTokens,
+    tradingTotal,
+    walletTokens,
+    walletTotal,
+    formattedWalletTotal,
+    isLoading,
+    isError,
+  } = usePolygonBalances(depositWalletAddress, eoaAddress);
 
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [showFundingTip, setShowFundingTip] = useState(false);
+  const [showAddrTooltip, setShowAddrTooltip] = useState(false);
+  const [tooltipDismissed, setTooltipDismissed] = useState(true);
 
-  const totalUsd = parseFloat(formattedTotal || "0");
-  const hasLowBalance = !isLoading && !isError && totalUsd < 1;
+  useEffect(() => {
+    setTooltipDismissed(localStorage.getItem(TOOLTIP_DISMISSED_KEY) === "true");
+  }, []);
+
+  const displayTotal = tradingTotal + walletTotal;
+  const hasLowBalance = !isLoading && !isError && displayTotal < 1;
+  const hasEoaFunds = walletTotal > 0.01;
 
   return (
     <>
       <div className="flex items-center gap-1.5">
-        {/* Balance display */}
-        {depositWalletAddress && (
+        {/* Balance display — show whenever connected (EOA or deposit wallet) */}
+        {(depositWalletAddress || eoaAddress) && (
           <div className="relative">
             <button
               onClick={() => setShowFundingTip(!showFundingTip)}
@@ -46,7 +62,7 @@ export default function WalletInfo({
                 ) : isError ? (
                   "$0.00"
                 ) : (
-                  `$${formattedTotal}`
+                  `$${displayTotal.toFixed(2)}`
                 )}
               </span>
               {hasLowBalance && (
@@ -57,17 +73,53 @@ export default function WalletInfo({
             {/* Funding tip dropdown */}
             {showFundingTip && (
               <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl z-50">
-                {/* Token breakdown */}
-                {tokens.length > 0 && (
-                  <div className="mb-3 space-y-1.5">
-                    {tokens.map((t) => (
-                      <div key={t.symbol} className="flex items-center justify-between">
-                        <span className="text-xs text-white/40">{t.symbol}</span>
-                        <span className="text-xs font-data text-white/60 tabular-nums">
-                          {t.formatted}
-                        </span>
+                {/* Trading balance (deposit wallet) */}
+                {depositWalletAddress && (
+                  <div className="mb-3">
+                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5">Trading Balance</div>
+                    {tradingTokens.length > 0 ? (
+                      <div className="space-y-1">
+                        {tradingTokens.map((t) => (
+                          <div key={t.symbol} className="flex items-center justify-between">
+                            <span className="text-xs text-white/40">{t.symbol}</span>
+                            <span className="text-xs font-data text-white/60 tabular-nums">
+                              {t.formatted}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <p className="text-xs text-white/20">$0.00</p>
+                    )}
+                  </div>
+                )}
+
+                {/* EOA wallet balance */}
+                {hasEoaFunds && (
+                  <div className="mb-3 pt-2 border-t border-white/5">
+                    <div className="text-[10px] text-amber-400/60 uppercase tracking-wider mb-1.5">Wallet Balance</div>
+                    <div className="space-y-1">
+                      {walletTokens.map((t) => (
+                        <div key={t.symbol} className="flex items-center justify-between">
+                          <span className="text-xs text-white/40">{t.symbol}</span>
+                          <span className="text-xs font-data text-white/60 tabular-nums">
+                            {t.formatted}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-amber-400/50 mt-1.5">
+                      Deposit to your trading wallet to place bets
+                    </p>
+                  </div>
+                )}
+
+                {/* No deposit wallet yet */}
+                {!depositWalletAddress && (
+                  <div className="mb-3">
+                    <p className="text-[11px] text-white/30">
+                      Click a match to start setting up your trading wallet
+                    </p>
                   </div>
                 )}
 
@@ -97,17 +149,93 @@ export default function WalletInfo({
           </div>
         )}
 
-        {/* Wallet address pill */}
+        {/* Wallet address pill with tooltip */}
         {depositWalletAddress && (
-          <button
-            onClick={copyWalletAddress}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/8 border border-white/6 transition-all cursor-pointer group"
-          >
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-xs font-data text-white/50 group-hover:text-white/80 transition-colors">
-              {copiedWallet ? "Copied!" : formatAddress(depositWalletAddress)}
-            </span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (!tooltipDismissed && !copiedWallet) {
+                  setShowAddrTooltip((v) => !v);
+                } else {
+                  copyWalletAddress();
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/8 border border-white/6 transition-all cursor-pointer group"
+            >
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-xs font-data text-white/50 group-hover:text-white/80 transition-colors">
+                {copiedWallet ? "Copied!" : formatAddress(depositWalletAddress)}
+              </span>
+              {!tooltipDismissed && (
+                <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" />
+              )}
+            </button>
+
+            {showAddrTooltip && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                {/* Header */}
+                <div className="px-4 pt-3.5 pb-2.5 border-b border-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-green-500/15 flex items-center justify-center">
+                      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="text-green-400">
+                        <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs font-semibold text-white/80">Deposit Wallet</span>
+                  </div>
+                </div>
+
+                {/* Two deposit methods */}
+                <div className="p-4 space-y-3">
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-purple-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[10px] text-purple-400 font-bold">1</span>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-white/70 font-medium leading-tight">Direct transfer</p>
+                      <p className="text-[10px] text-white/30 mt-0.5 leading-relaxed">
+                        Send <span className="text-white/50 font-medium">pUSD</span> or <span className="text-white/50 font-medium">USDC.e</span> to this address on Polygon. No minimum.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[10px] text-green-400 font-bold">2</span>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-white/70 font-medium leading-tight">Bridge (other tokens / chains)</p>
+                      <p className="text-[10px] text-white/30 mt-0.5 leading-relaxed">
+                        Use the <span className="text-green-400/70 font-medium">Deposit</span> button for any token or chain. Auto-converts to pUSD. Min $2.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer actions */}
+                <div className="px-4 py-2.5 border-t border-white/5 flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      copyWalletAddress();
+                      setShowAddrTooltip(false);
+                    }}
+                    className="text-[11px] text-blue-400/70 hover:text-blue-300 font-medium transition-colors"
+                  >
+                    Copy address
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem(TOOLTIP_DISMISSED_KEY, "true");
+                      setTooltipDismissed(true);
+                      setShowAddrTooltip(false);
+                    }}
+                    className="text-[10px] text-white/20 hover:text-white/40 transition-colors"
+                  >
+                    Don&apos;t show again
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Disconnect */}
@@ -119,11 +247,14 @@ export default function WalletInfo({
         </button>
       </div>
 
-      {/* Backdrop to close dropdown */}
-      {showFundingTip && (
+      {/* Backdrop to close dropdowns */}
+      {(showFundingTip || showAddrTooltip) && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setShowFundingTip(false)}
+          onClick={() => {
+            setShowFundingTip(false);
+            setShowAddrTooltip(false);
+          }}
         />
       )}
 

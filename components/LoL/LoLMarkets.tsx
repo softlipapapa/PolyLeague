@@ -13,6 +13,7 @@ import useRedeemPosition from "@/hooks/useRedeemPosition";
 import useStreamLinks from "@/hooks/useStreamLinks";
 
 import ErrorState from "@/components/shared/ErrorState";
+import { useToast } from "@/providers/ToastProvider";
 import EmptyState from "@/components/shared/EmptyState";
 import LoadingState from "@/components/shared/LoadingState";
 import LeagueFilter from "@/components/LoL/LeagueFilter";
@@ -41,6 +42,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
   const [drawerEvent, setDrawerEvent] = useState<LoLEvent | null>(null);
 
   const { eoaAddress } = useWallet();
+  const { showToast } = useToast();
   const {
     clobClient,
     relayClient,
@@ -167,7 +169,8 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
           POLLING_DURATION
         );
       } catch (err) {
-        console.error("Failed to redeem:", err);
+        const msg = err instanceof Error ? err.message : "Redeem failed";
+        showToast(msg, "error");
       } finally {
         setRedeemingEventId(null);
       }

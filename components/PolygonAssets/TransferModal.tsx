@@ -3,13 +3,19 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import useUsdcTransfer from "@/hooks/useUsdcTransfer";
 import { useTrading } from "@/providers/TradingProvider";
+import { useToast } from "@/providers/ToastProvider";
 import usePolygonBalances from "@/hooks/usePolygonBalances";
 import { useSupportedAssets, type DepositTransaction, type DepositStatus } from "@/hooks/useDeposit";
 
 import Portal from "@/components/Portal";
 import SelectDropdown from "@/components/shared/SelectDropdown";
 
-import { USDC_E_DECIMALS } from "@/constants/tokens";
+import {
+  USDC_E_CONTRACT_ADDRESS,
+  USDC_E_DECIMALS,
+  PUSD_CONTRACT_ADDRESS,
+  PUSD_DECIMALS,
+} from "@/constants/tokens";
 import { SUCCESS_STYLES } from "@/constants/ui";
 import { cn } from "@/utils/classNames";
 import { parseUnits } from "viem";
@@ -88,9 +94,10 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
   const [bridgeTxs, setBridgeTxs] = useState<DepositTransaction[]>([]);
   const [pollingInterval, setPollingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
+  const { showToast } = useToast();
   const { relayClient, depositWalletAddress } = useTrading();
   const { isTransferring, error: transferError, transferUsdc } = useUsdcTransfer();
-  const { formattedUsdcBalance, rawUsdcBalance } = usePolygonBalances(depositWalletAddress);
+  const { tradingTokens, formattedTradingTotal, primaryToken } = usePolygonBalances(depositWalletAddress);
   const { data: assets, isLoading: assetsLoading } = useSupportedAssets();
 
   const isPolygonDirect = selectedChainId === "137";
@@ -191,24 +198,32 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
   if (!isOpen) return null;
 
   const handleSendMax = () => {
-    if (rawUsdcBalance) {
-      setAmount((Number(rawUsdcBalance) / 10 ** USDC_E_DECIMALS).toString());
+    if (primaryToken && primaryToken.balance > 0) {
+      setAmount(primaryToken.balance.toString());
     }
   };
 
-  // Direct Polygon transfer (same as before)
+  const tokenAddress =
+    primaryToken?.symbol === "pUSD" ? PUSD_CONTRACT_ADDRESS : USDC_E_CONTRACT_ADDRESS;
+  const tokenDecimals =
+    primaryToken?.symbol === "pUSD" ? PUSD_DECIMALS : USDC_E_DECIMALS;
+
+  // Direct Polygon transfer
   const handleDirectTransfer = async () => {
     if (!relayClient || !depositWalletAddress || !recipient || !amount) return;
     try {
-      const amountBigInt = parseUnits(amount, USDC_E_DECIMALS);
+      const amountBigInt = parseUnits(amount, tokenDecimals);
       await transferUsdc(relayClient, depositWalletAddress, {
         recipient: recipient as `0x${string}`,
         amount: amountBigInt,
+        tokenAddress,
       });
+      showToast("Transfer successful!", "success");
       setShowSuccess(true);
       setTimeout(() => onClose(), 2000);
     } catch (err) {
-      console.error("Transfer failed:", err);
+      const msg = err instanceof Error ? err.message : "Transfer failed";
+      showToast(msg, "error");
     }
   };
 
@@ -243,11 +258,12 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
         throw new Error("No withdrawal address returned");
       }
 
-      // Step 2: Send USDC.e to the withdrawal address on Polygon
-      const amountBigInt = parseUnits(amount, USDC_E_DECIMALS);
+      // Step 2: Send tokens to the withdrawal address on Polygon
+      const amountBigInt = parseUnits(amount, tokenDecimals);
       await transferUsdc(relayClient, depositWalletAddress!, {
         recipient: withdrawAddress as `0x${string}`,
         amount: amountBigInt,
+        tokenAddress,
       });
 
       // Step 3: Poll status
@@ -281,8 +297,10 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
       pollStatus();
       const interval = setInterval(pollStatus, 15000);
       setPollingInterval(interval);
-    } catch (err: any) {
-      setWithdrawError(err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Withdrawal failed";
+      setWithdrawError(msg);
+      showToast(msg, "error");
     } finally {
       setIsBridgeWithdrawing(false);
     }
@@ -331,7 +349,17 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
           {/* Balance */}
           <div className="mb-4 bg-white/5 rounded-lg p-3">
             <p className="text-xs text-gray-400 mb-1">Available Balance</p>
-            <p className="text-lg font-bold font-data">${formattedUsdcBalance} USDC.e</p>
+            <p className="text-lg font-bold font-data">${formattedTradingTotal}</p>
+            {tradingTokens.length > 0 && (
+              <div className="mt-1.5 space-y-0.5">
+                {tradingTokens.map((t) => (
+                  <div key={t.symbol} className="flex justify-between text-xs text-white/40">
+                    <span>{t.symbol}</span>
+                    <span className="font-data">{t.formatted}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Destination chain dropdown */}
@@ -378,7 +406,7 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
           {/* Amount */}
           <div className="mb-5">
             <label className="block text-xs text-white/40 mb-1.5 font-medium">
-              Amount (USDC.e)
+              Amount ({primaryToken?.symbol || "USDC.e"})
             </label>
             <div className="relative">
               <input
@@ -422,7 +450,7 @@ export default function TransferModal({ isOpen, onClose }: TransferModalProps) {
                 ? "Sending..."
                 : "Withdrawing..."
               : isPolygonDirect
-              ? "Send USDC.e"
+              ? `Send ${primaryToken?.symbol || "USDC.e"}`
               : `Withdraw to ${CHAIN_META[selectedChainId]?.label || "Chain"}`}
           </button>
 
