@@ -867,3 +867,71 @@ Write all code comments, git commit messages, and console logs in English.
 - Clear browser localStorage (old sessions have `safeAddress` field)
 - End-to-end test: connect → deposit wallet deploys → place order
 - Deploy to production before 2026-05-04 12:30 UTC cutover
+
+### 2026-05-06 — Balance Fix, Toast Notifications, Order Validation, Deposit UX
+
+**Done:**
+
+**Balance display overhaul:**
+- `usePolygonBalances` now queries both EOA and deposit wallet in parallel
+- Returns separate `tradingTokens`/`walletTokens` with individual totals
+- Added `raw` bigint to `TokenBalance` (fixes MAX button which was broken — `rawUsdcBalance` was hardcoded to `null`)
+- WalletInfo shows balance whenever connected (not just when deposit wallet exists)
+- Dropdown splits into "Trading Balance" (deposit wallet) and "Wallet Balance" (EOA) sections
+- Amber hint when EOA has funds but deposit wallet is empty
+
+**Deposit wallet address tooltip:**
+- Click-to-show tooltip on address pill with two deposit methods explained
+- Method 1: Direct transfer (pUSD/USDC.e, no minimum)
+- Method 2: Bridge (other tokens/chains, min $2)
+- "Don't show again" saves to localStorage, blue dot indicator when tooltip available
+- After dismiss, clicking address copies directly
+
+**Deposit modal improvements:**
+- Min $2 warning upgraded from faint text to amber highlighted box
+
+**Toast notification system:**
+- New `ToastProvider` with global `useToast()` hook
+- Top-center slide-down toasts: error (red), success (green), info (gray)
+- Auto-dismiss after 5 seconds, manual close button
+- Wired into: OrderModal (place/fail/geoblock), TransferModal (send/withdraw), LoLMarkets (redeem)
+
+**Order validation:**
+- Added `MIN_ORDER_DOLLAR = 1` constant
+- Pre-submit validation: dollar amount (size × price) must be ≥ $1
+- Inline hint below Place Order button: "Min order $1 — need X shares at Y¢"
+- CLOB API error messages parsed into user-friendly toast messages
+
+**Withdraw (TransferModal) fixes:**
+- Now uses primary token (pUSD if available, USDC.e fallback) instead of hardcoded USDC.e
+- `createUsdcTransferCall` accepts optional `tokenAddress` param
+- Amount label and button text reflect actual token being sent
+- Token breakdown shown in Available Balance section
+
+**Other:**
+- Removed Next.js dev indicator logo (`devIndicators: false` in next.config.ts)
+
+**New files:**
+- `providers/ToastProvider.tsx` — global toast notification context + UI
+
+**Updated files (12):**
+- `hooks/usePolygonBalances.ts` — dual-address query, `TokenBalance.raw` field
+- `components/Header/WalletInfo.tsx` — dual balance display, address tooltip with dismiss
+- `components/Trading/OrderModal/index.tsx` — $1 min validation, toast integration
+- `components/PolygonAssets/TransferModal.tsx` — pUSD support, toast, fixed MAX
+- `components/LoL/LoLMarkets.tsx` — toast for redeem errors
+- `components/DepositModal.tsx` — prominent min $2 warning
+- `constants/validation.ts` — added `MIN_ORDER_DOLLAR`
+- `utils/transfer.ts` — optional `tokenAddress` param
+- `providers/index.tsx` — added ToastProvider to tree
+- `app/globals.css` — toast slide-down animation
+- `next.config.ts` — disabled dev indicators
+
+**Known issues:**
+- Bridge deposit minimum is $2; deposits below this are silently ignored by bridge
+- "Could not derive api key" CLOB error on first login is expected (falls through to createApiKey)
+- Polymarket CLOB API min order is $1 (enforced server-side, now also validated client-side)
+
+**Next steps:**
+- Test full deposit → trade → withdraw flow end-to-end
+- Deploy to production
