@@ -3,6 +3,28 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Side, OrderType } from "@polymarket/clob-client-v2";
 import type { ClobClient, UserOrderV2, UserMarketOrderV2 } from "@polymarket/clob-client-v2";
 
+function parseClobError(err: unknown): Error {
+  const raw = err instanceof Error ? err.message : String(err);
+
+  // Try to extract the nested JSON error from CLOB client
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      if (parsed?.status === 425 || parsed?.data === "service not ready") {
+        return new Error("Polymarket is temporarily unavailable. Please try again in a moment.");
+      }
+
+      const msg = parsed?.data?.error || parsed?.error;
+      if (typeof msg === "string") return new Error(msg);
+    } catch {}
+  }
+
+  if (err instanceof Error) return err;
+  return new Error("Failed to submit order");
+}
+
 export type OrderParams = {
   tokenId: string;
   size: number;
@@ -103,8 +125,7 @@ export default function useClobOrder(
           throw new Error("Order submission failed");
         }
       } catch (err: unknown) {
-        const error =
-          err instanceof Error ? err : new Error("Failed to submit order");
+        const error = parseClobError(err);
         setError(error);
         throw error;
       } finally {

@@ -149,6 +149,11 @@ export default function usePolygonBalances(
     tradingTokens.find((t) => t.symbol === "USDC.e" && t.balance > 0) ||
     tradingTokens.find((t) => t.symbol === "USDC" && t.balance > 0);
 
+  const pusdBalance = tradingTokens.find((t) => t.symbol === "pUSD") || null;
+  const convertibleTokens = tradingNonZero.filter(
+    (t) => (t.symbol === "USDC" || t.symbol === "USDC.e") && t.balance > 0.001
+  );
+
   return {
     tradingTokens: tradingNonZero,
     tradingTotal,
@@ -157,6 +162,8 @@ export default function usePolygonBalances(
     walletTotal,
     formattedWalletTotal: walletTotal.toFixed(2),
     primaryToken,
+    pusdBalance,
+    convertibleTokens,
     // Combined total
     tokens: tradingNonZero,
     totalUsd: tradingTotal,

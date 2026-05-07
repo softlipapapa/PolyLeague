@@ -157,7 +157,7 @@ export default function useTradingSession() {
         !apiCreds.passphrase
       ) {
         setCurrentStep("credentials");
-        apiCreds = await createOrDeriveUserApiCredentials();
+        apiCreds = await createOrDeriveUserApiCredentials(walletAddress);
       }
 
       // Token approvals

@@ -5,9 +5,11 @@ import { useWallet } from "@/providers/WalletContext";
 import { useTrading } from "@/providers/TradingProvider";
 import useAddressCopy from "@/hooks/useAddressCopy";
 import usePolygonBalances from "@/hooks/usePolygonBalances";
+import useConvertToPusd from "@/hooks/useConvertToPusd";
 import { formatAddress } from "@/utils/formatting";
 import TransferModal from "@/components/PolygonAssets/TransferModal";
 import DepositModal from "@/components/DepositModal";
+import { useToast } from "@/providers/ToastProvider";
 
 const TOOLTIP_DISMISSED_KEY = "riftmarket_deposit_tooltip_dismissed";
 
@@ -22,15 +24,14 @@ export default function WalletInfo({
     depositWalletAddress || null
   );
   const {
-    formattedTradingTotal,
     tradingTokens,
-    tradingTotal,
-    walletTokens,
-    walletTotal,
-    formattedWalletTotal,
+    pusdBalance,
+    convertibleTokens,
     isLoading,
     isError,
   } = usePolygonBalances(depositWalletAddress, eoaAddress);
+  const { convert, isConverting } = useConvertToPusd();
+  const { showToast } = useToast();
 
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -42,9 +43,9 @@ export default function WalletInfo({
     setTooltipDismissed(localStorage.getItem(TOOLTIP_DISMISSED_KEY) === "true");
   }, []);
 
-  const displayTotal = tradingTotal + walletTotal;
-  const hasLowBalance = !isLoading && !isError && displayTotal < 1;
-  const hasEoaFunds = walletTotal > 0.01;
+  const pusdAmount = pusdBalance?.balance ?? 0;
+  const hasLowBalance = !isLoading && !isError && pusdAmount < 1;
+  const hasConvertible = convertibleTokens.length > 0;
 
   return (
     <>
@@ -62,7 +63,7 @@ export default function WalletInfo({
                 ) : isError ? (
                   "$0.00"
                 ) : (
-                  `$${displayTotal.toFixed(2)}`
+                  `$${pusdAmount.toFixed(2)}`
                 )}
               </span>
               {hasLowBalance && (
@@ -73,44 +74,70 @@ export default function WalletInfo({
             {/* Funding tip dropdown */}
             {showFundingTip && (
               <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl z-50">
-                {/* Trading balance (deposit wallet) */}
+                {/* Tradeable pUSD balance */}
                 {depositWalletAddress && (
                   <div className="mb-3">
-                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5">Trading Balance</div>
-                    {tradingTokens.length > 0 ? (
-                      <div className="space-y-1">
-                        {tradingTokens.map((t) => (
-                          <div key={t.symbol} className="flex items-center justify-between">
-                            <span className="text-xs text-white/40">{t.symbol}</span>
-                            <span className="text-xs font-data text-white/60 tabular-nums">
-                              {t.formatted}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-white/20">$0.00</p>
-                    )}
+                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5">Tradeable (pUSD)</div>
+                    <p className="text-sm font-data font-bold text-white/90 tabular-nums">
+                      ${pusdAmount.toFixed(2)}
+                    </p>
                   </div>
                 )}
 
-                {/* EOA wallet balance */}
-                {hasEoaFunds && (
+                {/* Convertible tokens in deposit wallet */}
+                {hasConvertible && (
                   <div className="mb-3 pt-2 border-t border-white/5">
-                    <div className="text-[10px] text-amber-400/60 uppercase tracking-wider mb-1.5">Wallet Balance</div>
-                    <div className="space-y-1">
-                      {walletTokens.map((t) => (
+                    <div className="text-[10px] text-amber-400/60 uppercase tracking-wider mb-1.5">Not Tradeable — Convert to pUSD</div>
+                    <div className="space-y-1.5">
+                      {convertibleTokens.map((t) => {
+                        const belowMin = t.balance < 2;
+                        return (
                         <div key={t.symbol} className="flex items-center justify-between">
-                          <span className="text-xs text-white/40">{t.symbol}</span>
-                          <span className="text-xs font-data text-white/60 tabular-nums">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-white/40">{t.symbol}</span>
+                            <span className="text-xs font-data text-white/60 tabular-nums">
+                              ${t.formatted}
+                            </span>
+                          </div>
+                          {belowMin ? (
+                            <span className="text-[10px] text-white/20">Min $2</span>
+                          ) : (
+                          <button
+                            onClick={async () => {
+                              const ok = await convert(t);
+                              if (ok) {
+                                showToast(`Converting ${t.formatted} ${t.symbol} → pUSD. May take ~30s.`, "success");
+                              } else {
+                                showToast("Conversion failed", "error");
+                              }
+                            }}
+                            disabled={isConverting}
+                            className="px-2 py-0.5 rounded text-[10px] font-medium text-purple-400/80 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 transition-all disabled:opacity-50"
+                          >
+                            {isConverting ? "..." : "Convert"}
+                          </button>
+                          )}
+                        </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other non-stablecoin tokens */}
+                {tradingTokens.filter((t) => t.symbol !== "pUSD" && t.symbol !== "USDC" && t.symbol !== "USDC.e").length > 0 && (
+                  <div className="mb-3 pt-2 border-t border-white/5">
+                    <div className="text-[10px] text-white/20 uppercase tracking-wider mb-1.5">Other</div>
+                    <div className="space-y-1">
+                      {tradingTokens.filter((t) => t.symbol !== "pUSD" && t.symbol !== "USDC" && t.symbol !== "USDC.e").map((t) => (
+                        <div key={t.symbol} className="flex items-center justify-between">
+                          <span className="text-xs text-white/30">{t.symbol}</span>
+                          <span className="text-xs font-data text-white/40 tabular-nums">
                             {t.formatted}
                           </span>
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-amber-400/50 mt-1.5">
-                      Deposit to your trading wallet to place bets
-                    </p>
                   </div>
                 )}
 
@@ -119,6 +146,15 @@ export default function WalletInfo({
                   <div className="mb-3">
                     <p className="text-[11px] text-white/30">
                       Click a match to start setting up your trading wallet
+                    </p>
+                  </div>
+                )}
+
+                {/* Deposit hint */}
+                {depositWalletAddress && (
+                  <div className="mb-3 px-2.5 py-2 rounded-lg bg-amber-500/8 border border-amber-500/15">
+                    <p className="text-[10px] text-amber-400/70 leading-relaxed">
+                      Only <span className="font-bold text-amber-300/90">pUSD</span> can be used for trading. Convert USDC/USDC.e above (min <span className="font-bold text-amber-300/90">$2</span>).
                     </p>
                   </div>
                 )}

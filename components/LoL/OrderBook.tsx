@@ -7,6 +7,8 @@ interface OrderBookProps {
   tokenIds: string[];
   outcomes: string[];
   enabled: boolean;
+  selectedTeam?: 0 | 1;
+  onTeamSelect?: (idx: 0 | 1) => void;
 }
 
 function formatPrice(price: string): string {
@@ -22,8 +24,9 @@ function formatSize(size: string): string {
 
 const DISPLAY_LEVELS = 5;
 
-export default function OrderBook({ tokenIds, outcomes, enabled }: OrderBookProps) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
+export default function OrderBook({ tokenIds, outcomes, enabled, selectedTeam, onTeamSelect }: OrderBookProps) {
+  const [localIdx, setLocalIdx] = useState(0);
+  const selectedIdx = selectedTeam ?? localIdx;
   const tokenId = tokenIds[selectedIdx] || null;
 
   const { data, isLoading } = useOrderBook({ tokenId, enabled });
@@ -67,7 +70,7 @@ export default function OrderBook({ tokenIds, outcomes, enabled }: OrderBookProp
           {outcomes.map((name, i) => (
             <button
               key={i}
-              onClick={() => setSelectedIdx(i)}
+              onClick={() => { setLocalIdx(i); onTeamSelect?.(i as 0 | 1); }}
               className={`flex-1 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-all ${
                 selectedIdx === i
                   ? i === 0
