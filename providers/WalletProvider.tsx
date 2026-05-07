@@ -8,7 +8,7 @@ import {
   http,
   WalletClient,
 } from "viem";
-import { useAccount, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect, useConnectorClient } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import getMagic from "@/lib/magic";
 import { providers } from "ethers";
@@ -34,10 +34,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const {
     address: wagmiAddress,
     isConnected: wagmiConnected,
-    connector: activeConnector,
   } = useAccount();
   const { disconnectAsync: wagmiDisconnect } = useDisconnect();
   const { open: openAppKit } = useAppKit();
+  const { data: connectorClient } = useConnectorClient();
 
   // ── Helper functions (declared before useEffect) ──
   const setupMagicClients = useCallback(() => {
@@ -83,29 +83,32 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     });
   }, [walletType, setupMagicClients, fetchMagicUser]);
 
+  // ── WalletConnect: restore session on page refresh ──
+  useEffect(() => {
+    if (walletType) return;
+    if (wagmiConnected && wagmiAddress) {
+      setWalletType("walletconnect");
+    }
+  }, [wagmiConnected, wagmiAddress, walletType]);
+
   // ── WalletConnect: sync wagmi state when connected ──
   useEffect(() => {
     if (walletType !== "walletconnect") return;
-    if (!wagmiConnected || !wagmiAddress || !activeConnector) return;
+    if (!wagmiConnected || !wagmiAddress || !connectorClient) return;
 
-    // Use the connector's provider callback to update all wallet state
-    activeConnector.getProvider().then((provider: unknown) => {
-      if (!provider) return;
+    setEoaAddress(wagmiAddress);
 
-      setEoaAddress(wagmiAddress);
-
-      const client = createWalletClient({
-        chain: polygon,
-        transport: custom(provider as Parameters<typeof custom>[0]),
-      });
-      const ethersProvider = new providers.Web3Provider(
-        provider as providers.ExternalProvider
-      );
-
-      setWalletClient(client);
-      setEthersSigner(ethersProvider.getSigner());
+    const viemClient = createWalletClient({
+      chain: polygon,
+      transport: custom(connectorClient.transport),
     });
-  }, [wagmiConnected, wagmiAddress, activeConnector, walletType]);
+    const ethersProvider = new providers.Web3Provider(
+      connectorClient.transport as unknown as providers.ExternalProvider
+    );
+
+    setWalletClient(viemClient);
+    setEthersSigner(ethersProvider.getSigner());
+  }, [wagmiConnected, wagmiAddress, connectorClient, walletType]);
 
   // ── Connect methods ──
   const connectMagic = useCallback(async () => {

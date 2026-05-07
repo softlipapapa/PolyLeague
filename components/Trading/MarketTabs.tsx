@@ -4,11 +4,12 @@ import { useState } from "react";
 
 import ActiveOrders from "@/components/Trading/Orders";
 import UserPositions from "@/components/Trading/Positions";
+import TradeHistory from "@/components/Trading/History";
 import LoLMarkets from "@/components/LoL/LoLMarkets";
 
 import { cn } from "@/utils/classNames";
 
-type TabId = "upcoming" | "live" | "settling" | "resolved" | "positions" | "orders";
+type TabId = "upcoming" | "live" | "settling" | "resolved" | "positions" | "orders" | "history";
 
 interface Tab {
   id: TabId;
@@ -22,6 +23,7 @@ const tabs: Tab[] = [
   { id: "resolved", label: "Results" },
   { id: "positions", label: "Positions" },
   { id: "orders", label: "Orders" },
+  { id: "history", label: "History" },
 ];
 
 export default function MarketTabs() {
@@ -58,6 +60,7 @@ export default function MarketTabs() {
         {activeTab === "resolved" && <LoLMarkets status="resolved" />}
         {activeTab === "positions" && <UserPositions />}
         {activeTab === "orders" && <ActiveOrders />}
+        {activeTab === "history" && <TradeHistory />}
       </div>
     </div>
   );

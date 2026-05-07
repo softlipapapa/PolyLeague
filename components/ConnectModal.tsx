@@ -24,7 +24,7 @@ export default function ConnectModal({ isOpen, onClose }: ConnectModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+      className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-md"
       onClick={onClose}
     >
       <div

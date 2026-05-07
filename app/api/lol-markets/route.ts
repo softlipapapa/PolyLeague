@@ -150,11 +150,16 @@ function parseEvent(event: any) {
   // Check if main market is still accepting orders
   const isAcceptingOrders = mainMarket?.acceptingOrders !== false;
 
+  // Check if outcome prices indicate a decided match (one side >= 95¢)
+  const maxOutcomePrice = mainMarket
+    ? Math.max(...mainMarket.outcomePrices.map((p: string) => parseFloat(p) || 0))
+    : 0;
+  const effectivelyDecided = maxOutcomePrice >= 1.0;
+
   let status: "live" | "upcoming" | "resolved" | "settling";
   if (event.closed) {
     status = "resolved";
-  } else if (!isAcceptingOrders && gameStart && now >= gameStart) {
-    // Match started, market no longer accepting orders but not yet closed = settling
+  } else if (gameStart && now >= gameStart && (!isAcceptingOrders || effectivelyDecided)) {
     status = "settling";
   } else if (gameStart && now >= gameStart) {
     status = "live";

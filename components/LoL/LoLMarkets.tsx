@@ -19,7 +19,6 @@ import LoadingState from "@/components/shared/LoadingState";
 import LeagueFilter from "@/components/LoL/LeagueFilter";
 import LoLMarketCard from "@/components/LoL/LoLMarketCard";
 import MatchDrawer from "@/components/LoL/MatchDrawer";
-import OrderPlacementModal from "@/components/Trading/OrderModal";
 
 import { createPollingInterval } from "@/utils/polling";
 import { POLLING_DURATION, POLLING_INTERVAL } from "@/constants/query";
@@ -30,26 +29,14 @@ interface LoLMarketsProps {
 
 export default function LoLMarkets({ status }: LoLMarketsProps) {
   const [activeLeague, setActiveLeague] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOutcome, setSelectedOutcome] = useState<{
-    marketTitle: string;
-    outcome: string;
-    price: number;
-    tokenId: string;
-    negRisk: boolean;
-  } | null>(null);
   const [redeemingEventId, setRedeemingEventId] = useState<string | null>(null);
   const [drawerEvent, setDrawerEvent] = useState<LoLEvent | null>(null);
 
   const { eoaAddress } = useWallet();
   const { showToast } = useToast();
   const {
-    clobClient,
     relayClient,
     isGeoblocked,
-    isTradingSessionComplete,
-    initTradingCredentials,
-    currentStep,
     depositWalletAddress,
   } = useTrading();
 
@@ -119,32 +106,6 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handleOutcomeClick = useCallback(
-    (
-      marketTitle: string,
-      outcome: string,
-      price: number,
-      tokenId: string,
-      negRisk: boolean
-    ) => {
-      setSelectedOutcome({ marketTitle, outcome, price, tokenId, negRisk });
-      setIsModalOpen(true);
-    },
-    []
-  );
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedOutcome(null);
-  };
-
-  const handleConnectPrompt = useCallback(() => {
-    window.dispatchEvent(new Event("open-connect-modal"));
-  }, []);
-
-  const isSessionInitializing =
-    currentStep !== "idle" && currentStep !== "complete";
-
   const handleRedeem = useCallback(
     async (position: PolymarketPosition, eventId: string) => {
       if (!relayClient || !depositWalletAddress) return;
@@ -160,9 +121,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
         queryClient.invalidateQueries({ queryKey: ["polygon-balances"] });
         createPollingInterval(
           () => {
-            queryClient.invalidateQueries({
-              queryKey: ["polymarket-positions"],
-            });
+            queryClient.invalidateQueries({ queryKey: ["polymarket-positions"] });
             queryClient.invalidateQueries({ queryKey: ["polygon-balances"] });
           },
           POLLING_INTERVAL,
@@ -175,27 +134,7 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
         setRedeemingEventId(null);
       }
     },
-    [relayClient, depositWalletAddress, redeemPosition, queryClient]
-  );
-
-  const handleDrawerTeamClick = useCallback(
-    (teamIndex: 0 | 1) => {
-      if (!drawerEvent?.mainMarket) return;
-      if (!eoaAddress) {
-        handleConnectPrompt();
-        return;
-      }
-      const m = drawerEvent.mainMarket;
-      const price = parseFloat(m.outcomePrices[teamIndex] || "0");
-      handleOutcomeClick(
-        drawerEvent.title,
-        m.outcomes[teamIndex],
-        price,
-        m.clobTokenIds[teamIndex],
-        m.negRisk
-      );
-    },
-    [drawerEvent, eoaAddress, handleOutcomeClick, handleConnectPrompt]
+    [relayClient, depositWalletAddress, redeemPosition, queryClient, showToast]
   );
 
   const getEventPositions = useCallback(
@@ -298,23 +237,6 @@ export default function LoLMarkets({ status }: LoLMarketsProps) {
           isConnected={!!eoaAddress}
           streamLink={getStreamForMatch(drawerEvent.teamA, drawerEvent.teamB, drawerEvent.league, drawerEvent.status)}
           positions={getEventPositions(drawerEvent)}
-          onTeamClick={handleDrawerTeamClick}
-        />
-      )}
-
-      {/* Order Placement Modal */}
-      {selectedOutcome && (
-        <OrderPlacementModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          marketTitle={selectedOutcome.marketTitle}
-          outcome={selectedOutcome.outcome}
-          currentPrice={selectedOutcome.price}
-          tokenId={selectedOutcome.tokenId}
-          negRisk={selectedOutcome.negRisk}
-          clobClient={clobClient}
-          onInitTradingCredentials={initTradingCredentials}
-          isSessionInitializing={isSessionInitializing}
         />
       )}
     </>

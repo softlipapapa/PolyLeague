@@ -74,10 +74,12 @@ export default function UserPositions() {
       );
 
       queryClient.invalidateQueries({ queryKey: ["polymarket-positions"] });
+      queryClient.invalidateQueries({ queryKey: ["polygon-balances"] });
 
       createPollingInterval(
         () => {
           queryClient.invalidateQueries({ queryKey: ["polymarket-positions"] });
+          queryClient.invalidateQueries({ queryKey: ["polygon-balances"] });
         },
         POLLING_INTERVAL,
         POLLING_DURATION
@@ -162,26 +164,14 @@ export default function UserPositions() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with Position Count and Dust Toggle */}
+    <div className="space-y-3">
       <PositionFilters
         positionCount={activePositions.length}
         hideDust={hideDust}
         onToggleHideDust={() => setHideDust(!hideDust)}
       />
 
-      {/* Dust Warning Banner */}
-      {hideDust && positions && positions.length > activePositions.length && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-          <p className="text-yellow-300 text-sm">
-            Hiding {positions.length - activePositions.length} dust position(s)
-            (value &lt; ${DUST_THRESHOLD.toFixed(2)})
-          </p>
-        </div>
-      )}
-
-      {/* Positions List */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {activePositions.map((position) => (
           <PositionCard
             key={`${position.conditionId}-${position.outcomeIndex}`}

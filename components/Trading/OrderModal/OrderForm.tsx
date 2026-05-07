@@ -13,10 +13,9 @@ interface OrderFormProps {
   isLoadingTickSize: boolean;
 }
 
-const isValidPriceInput = (value: string, maxDecimals: number): boolean => {
-  if (value === "" || value === "0" || value === "0.") return true;
-  const regex = new RegExp(`^(0?\\.[0-9]{0,${maxDecimals}}|0)$`);
-  return regex.test(value);
+const isValidPriceInput = (value: string): boolean => {
+  if (value === "") return true;
+  return /^[0-9]*\.?[0-9]*$/.test(value);
 };
 
 export default function OrderForm({
@@ -38,7 +37,7 @@ export default function OrderForm({
   };
 
   const handleLimitPriceChange = (value: string) => {
-    if (isValidPriceInput(value, decimalPlaces)) {
+    if (isValidPriceInput(value)) {
       onLimitPriceChange(value);
     }
   };

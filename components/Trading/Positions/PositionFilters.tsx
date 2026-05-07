@@ -1,5 +1,3 @@
-import { cn } from "@/utils/classNames";
-
 interface PositionFiltersProps {
   positionCount: number;
   hideDust: boolean;
@@ -13,17 +11,16 @@ export default function PositionFilters({
 }: PositionFiltersProps) {
   return (
     <div className="flex items-center justify-between">
-      <h2 className="text-xl font-bold">Positions ({positionCount})</h2>
+      <div className="flex items-baseline gap-2">
+        <h3 className="text-sm font-semibold text-white/80">Positions</h3>
+        <span className="text-xs text-white/20 font-data">{positionCount}</span>
+      </div>
       <button
         onClick={onToggleHideDust}
-        className={cn(
-          "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-          hideDust
-            ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "bg-white/10 text-gray-300 hover:bg-white/20"
-        )}
+        className="px-2 py-1 rounded-md text-[10px] font-medium transition-colors cursor-pointer
+          text-white/25 hover:text-white/50 bg-white/3 hover:bg-white/6 border border-white/5"
       >
-        {hideDust ? "Show All" : "Hide Dust"}
+        {hideDust ? "Show dust" : "Hide dust"}
       </button>
     </div>
   );

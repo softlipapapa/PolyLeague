@@ -136,7 +136,7 @@ export default function LoLMarketCard({
       onClick={onCardClick}
     >
       {/* Meta row */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+      <div className="flex items-center justify-between px-3 md:px-5 pt-4 pb-2">
         <div className="flex items-center gap-2">
           {league && (
             <span className="text-[10px] font-semibold uppercase tracking-widest text-purple-400/80">
@@ -208,35 +208,35 @@ export default function LoLMarketCard({
 
       {/* Main match area */}
       {mainMarket && teamA && teamB ? (
-        <div className="px-5 pb-4">
+        <div className="px-3 md:px-5 pb-4">
           {/* Teams row */}
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-2 md:gap-3 mb-3">
             {/* Team A */}
-            <div className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
+            <div className={`flex-1 min-w-0 flex items-center gap-2 md:gap-3 py-2.5 md:py-3 px-2.5 md:px-4 rounded-xl transition-all duration-200 ${
               isResolved
                 ? teamAWon ? "bg-green-500/8" : "opacity-40"
                 : "group-hover:bg-green-500/5"
             }`}>
               <TeamLogo teamName={teamA} logoUrl={teamLogos[teamA] ?? null} />
-              <div className="flex-1 text-left min-w-0">
-                <p className={`text-sm font-semibold truncate ${
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs md:text-sm font-semibold truncate ${
                   isResolved && !teamAWon ? "text-white/30" : "text-white/90"
                 }`}>{teamA}</p>
               </div>
               {isResolved ? (
                 teamAWon ? (
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 shrink-0">
                     <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-[10px] font-semibold uppercase text-green-400">Win</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] font-medium text-white/15 uppercase">Loss</span>
+                  <span className="text-[10px] font-medium text-white/15 uppercase shrink-0">Loss</span>
                 )
               ) : (
-                <span className="font-data text-lg font-bold text-green-400 tabular-nums">
-                  {teamAPct}<span className="text-xs text-green-400/40 ml-px">%</span>
+                <span className="font-data text-base md:text-lg font-bold text-green-400 tabular-nums shrink-0">
+                  {teamAPct}<span className="text-[10px] md:text-xs text-green-400/40 ml-px">%</span>
                 </span>
               )}
             </div>
@@ -244,31 +244,31 @@ export default function LoLMarketCard({
             <span className="text-white/10 text-xs font-bold shrink-0">vs</span>
 
             {/* Team B */}
-            <div className={`flex-1 flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${
+            <div className={`flex-1 min-w-0 flex items-center gap-2 md:gap-3 py-2.5 md:py-3 px-2.5 md:px-4 rounded-xl transition-all duration-200 ${
               isResolved
                 ? teamBWon ? "bg-green-500/8" : "opacity-40"
                 : "group-hover:bg-red-500/5"
             }`}>
               <TeamLogo teamName={teamB} logoUrl={teamLogos[teamB] ?? null} />
-              <div className="flex-1 text-left min-w-0">
-                <p className={`text-sm font-semibold truncate ${
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs md:text-sm font-semibold truncate ${
                   isResolved && !teamBWon ? "text-white/30" : "text-white/90"
                 }`}>{teamB}</p>
               </div>
               {isResolved ? (
                 teamBWon ? (
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 shrink-0">
                     <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-[10px] font-semibold uppercase text-green-400">Win</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] font-medium text-white/15 uppercase">Loss</span>
+                  <span className="text-[10px] font-medium text-white/15 uppercase shrink-0">Loss</span>
                 )
               ) : (
-                <span className="font-data text-lg font-bold text-red-400 tabular-nums">
-                  {teamBPct}<span className="text-xs text-red-400/40 ml-px">%</span>
+                <span className="font-data text-base md:text-lg font-bold text-red-400 tabular-nums shrink-0">
+                  {teamBPct}<span className="text-[10px] md:text-xs text-red-400/40 ml-px">%</span>
                 </span>
               )}
             </div>
@@ -343,7 +343,7 @@ export default function LoLMarketCard({
           )}
         </div>
       ) : (
-        <div className="px-5 pb-4 text-sm text-white/50">{event.title}</div>
+        <div className="px-3 md:px-5 pb-4 text-sm text-white/50">{event.title}</div>
       )}
     </div>
   );
